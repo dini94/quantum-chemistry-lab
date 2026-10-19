@@ -48,11 +48,16 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - Gaussian & ORCA:
+      - Overview: gaussian-orca/index.md
+      - Theory: gaussian-orca/theory.md
+      - Structure Building: gaussian-orca/structure-building.md
+      - Input Builder: gaussian-orca/input-builder.md
+      - Calculation Workflows: gaussian-orca/workflows.md
+      - Results & Analysis: gaussian-orca/results-analysis.md
+      - Publication Workflow: gaussian-orca/publication.md
+      - Free Analysis Software: gaussian-orca/software-library.md
   - Learning Paths: learning-paths.md
-  - Software Modules:
-      - CP2K: cp2k/index.md
-      - ORCA: orca/index.md
-      - Gaussian: gaussian/index.md
   - Interactive Demo: simulator/index.md
   - About: about.md
 
