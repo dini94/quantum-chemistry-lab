@@ -1,5 +1,5 @@
 
-name: Deploy documentation to GitHub Pages
+name: Deploy Quantum Chemistry Lab
 
 on:
   push:
@@ -23,21 +23,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
+      - name: Verify application files
+        run: |
+          test -f public/index.html
+          test -f public/chemical-system-builder.html
+          test -f public/assets/app.js
+          test -f public/assets/system-builder.js
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
 
-      - name: Build site
-        run: mkdocs build --strict
-
-      - name: Upload Pages artifact
+      - name: Upload application
         uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          path: public
 
   deploy:
     environment:
