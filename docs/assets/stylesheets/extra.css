@@ -1,0 +1,12 @@
+:root { --lab-muted: #596780; --lab-line: rgba(90,110,145,.22); --lab-tint: rgba(88,115,180,.08); }
+.md-typeset .lead { font-size: 1.12rem; color: var(--lab-muted); max-width: 52rem; }
+.hero { display:flex; align-items:center; justify-content:space-between; gap:2rem; padding:clamp(1.5rem,4vw,3rem); margin:1.5rem 0 2rem; border:1px solid var(--lab-line); border-radius:1.1rem; background:linear-gradient(120deg,var(--lab-tint),transparent 75%); }
+.hero-copy { max-width:48rem; } .hero h2 { margin:.35rem 0 .7rem; font-size:clamp(1.6rem,4vw,2.45rem); line-height:1.12; } .hero p { color:var(--lab-muted); }
+.eyebrow,.software-tag { font-size:.72rem; font-weight:800; letter-spacing:.09em; color:var(--md-primary-fg-color); } .hero-mark { font-size:clamp(5rem,13vw,9rem); line-height:1; color:var(--md-primary-fg-color); opacity:.8; padding:0 .4rem; }
+.software-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; margin:1.2rem 0 2rem; }
+.software-card { display:block; padding:1.2rem 1.3rem; border:1px solid var(--lab-line); border-radius:.85rem; color:inherit!important; text-decoration:none!important; transition:transform .15s ease,border-color .15s ease,background .15s ease; }
+.software-card:hover { transform:translateY(-2px); border-color:var(--md-primary-fg-color); background:var(--lab-tint); } .software-card h3 { margin:.45rem 0; color:var(--md-typeset-color); } .software-card p { margin-bottom:0; color:var(--lab-muted); }
+.demo-panel { display:grid; grid-template-columns:minmax(13rem,.8fr) minmax(0,1.5fr); gap:1.25rem; margin:1rem 0 2rem; } .demo-controls,.demo-result { min-width:0; padding:1rem; border:1px solid var(--lab-line); border-radius:.8rem; }
+.demo-controls label { display:block; font-weight:700; margin:.75rem 0 .25rem; } .demo-controls select,.demo-controls input { box-sizing:border-box; width:100%; padding:.55rem; border:1px solid var(--lab-line); border-radius:.4rem; background:var(--md-default-bg-color); color:var(--md-typeset-color); }
+.demo-controls button { margin-top:1rem; } .demo-result pre { max-height:28rem; overflow:auto; } .demo-warning { padding:.8rem; border-left:4px solid #d49b28; background:rgba(212,155,40,.1); border-radius:.25rem; } #demo-status { min-height:1.3rem; color:var(--lab-muted); }
+@media(max-width:700px) { .hero { align-items:flex-start; } .hero-mark { display:none; } .software-grid,.demo-panel { grid-template-columns:1fr; } }

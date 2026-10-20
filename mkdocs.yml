@@ -1,0 +1,67 @@
+site_name: Quantum Chemistry Lab
+site_description: Learning modules for Gaussian and ORCA quantum chemistry workflows
+site_url: https://YOUR-USERNAME.github.io/quantum-chemistry-lab/
+repo_name: YOUR-USERNAME/quantum-chemistry-lab
+repo_url: https://github.com/YOUR-USERNAME/quantum-chemistry-lab
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - content.code.copy
+    - content.action.edit
+    - search.suggest
+    - search.highlight
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: cyan
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: cyan
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+nav:
+  - Home: index.md
+  - Learning path: learning-paths.md
+  - Gaussian & ORCA:
+      - Overview: gaussian-orca/index.md
+      - Theory: gaussian-orca/theory.md
+      - Molecular structure: gaussian-orca/structure-building.md
+      - Input builder: gaussian-orca/input-builder.md
+      - Calculation workflows: gaussian-orca/workflows.md
+      - Results & visualization: gaussian-orca/results-analysis.md
+      - Publication workflow: gaussian-orca/publication.md
+      - Software library: gaussian-orca/software-library.md
+  - Interactive demo: simulator/index.md
+  - About: about.md
+
+extra_css:
+  - assets/stylesheets/extra.css
+extra_javascript:
+  - assets/javascripts/demo.js
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
