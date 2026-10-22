@@ -1,57 +1,48 @@
-# Quantum Chemistry Lab — Module 01 (revised)
+# Quantum Chemistry Studio — Gaussian 16 + ORCA (prototype)
 
-This package replaces the first prototype with a more deliberate chemical-system builder. It is a static browser application designed for GitHub Pages. It does **not** run the underlying simulation programs.
+A modular web prototype for molecular structure preparation and generating/editing Gaussian and ORCA input files. The web app does **not** run Gaussian or ORCA; use your licensed/authorized local installation or HPC.
 
-## Contents
+## What's included
 
-- `public/index.html` — application landing page
-- `public/chemical-system-builder.html` — structure editor, SDF→CIF converter, software-specific input generator, exports/checks
-- `public/assets/system-builder.js` — editor and generation logic
-- `public/assets/system-builder.css`, `public/assets/style.css` — UI styles
-- `.github/workflows/deploy.yml` — deploys the `public/` folder to GitHub Pages
+- `public/index.html`: single-page interface with four tabs: Molecular Builder, Gaussian 16, ORCA, Upload/Edit.
+- `public/assets/app.js`: SMILES depiction (RDKit.js), basic atom/visual-bond editing, XYZ import/export, PDB export, input generation, file upload/edit/download.
+- `backend/app.py`: optional FastAPI service using RDKit + ASE for SMILES → ETKDG 3D geometry → MMFF94/UFF optimization and structure package export. `/api/optimize` returns optimized XYZ and metadata; `/api/export` returns ZIP containing XYZ/PDB/CIF/GEN where supported.
+- `.github/workflows/deploy.yml`: deploys the `public/` directory to GitHub Pages.
 
-## Install/replace in GitHub
+## Deploy to GitHub Pages
 
-1. Extract this ZIP.
-2. In your `quantum-chemistry-lab` repository, upload the **contents** of the extracted folder to the repository root.
-3. Overwrite files with matching names, including `.github/workflows/deploy.yml` if prompted. Note that `.github` is a hidden folder in some file browsers; if it is not visible, create/edit `.github/workflows/deploy.yml` directly in GitHub as needed.
-4. Commit to branch `main`.
-5. In Settings → Pages, select **GitHub Actions** as the source.
-6. Check Actions for a green deployment run.
+1. Extract the ZIP and upload the **contents** of this folder to the repository root, preserving `public/`, `backend/`, and `.github/workflows/`.
+2. In GitHub, open **Settings → Pages** and select **GitHub Actions** as the build/deployment source.
+3. Push to the default branch. The workflow publishes `public/`.
+4. If an older MkDocs workflow is active, disable it or ensure it does not compete with this workflow.
 
-For a project repository named `quantum-chemistry-lab`, the module page should be available at:
-`https://USERNAME.github.io/quantum-chemistry-lab/chemical-system-builder.html`
+The web app's SMILES 2D depiction uses the RDKit.js CDN and the 3D preview uses 3Dmol.js CDN. A network connection is needed for those libraries.
 
-## Features
+## Enable real 3D pre-optimization locally (Mac/Linux)
 
-### Molecular editor
-- Add elements manually by clicking the canvas.
-- Create single, double, triple, and aromatic bonds by selecting two atoms in Bond mode.
-- Delete selected atoms, inspect/edit coordinates, import V2000 SDF/MOL, XYZ, or PDB, and export SDF, XYZ, PDB, CIF, and DFTB+ GEN.
-- The simple “Add H” function uses a valence heuristic and must be checked. “Clean 2D layout” is a drawing layout, **not** a molecular mechanics or quantum geometry optimization.
-- The 3D preview uses 3Dmol.js from a CDN and requires an internet connection.
+Requires Python 3.11 and conda/mamba or another Python environment manager. From the extracted project folder:
 
-### SDF → CIF
-- Reads V2000 SDF/MOL files (V3000 is not supported in this version).
-- Requires user-supplied cell parameters because ordinary molecular SDF files do not define a crystallographic lattice.
-- Writes a P1 CIF, optionally centering the molecule in the specified cell. It does not infer experimental crystal packing, symmetry, or a physically appropriate vacuum region.
+```bash
+conda create -n qcs-builder -c conda-forge python=3.11 rdkit ase fastapi uvicorn
+conda activate qcs-builder
+cd backend
+uvicorn app:app --host 127.0.0.1 --port 8765
+```
 
-### Input templates
-- Gaussian, ORCA, Quantum ESPRESSO `pw.x`, DFTB+, PACKMOL, GROMACS `.mdp`, and LAMMPS input starter.
-- PACKMOL supports tolerance, filetype, output, optional PBC, multiple `structure` blocks, molecule counts, and inside/outside regions. Coordinate templates must be supplied separately.
-- DFTB+ download includes a companion GEN file.
-- Quantum ESPRESSO needs compatible UPF pseudopotentials; DFTB+ needs compatible Slater–Koster files; GROMACS and LAMMPS need validated force-field/topology and parameter files.
+Keep the terminal running. Then open the deployed page. Some browsers may restrict a hosted HTTPS page from connecting to a loopback HTTP service; if so, serve the page locally (for example, `python -m http.server 8000` from `public/`) or use the API directly. Local backend only performs RDKit molecular mechanics and structure export; it does not execute Gaussian or ORCA.
 
-## Scientific limitations
+## Current limitations (important)
 
-- The application generates templates and performs basic format checks; it does not prove that a structure or input is chemically correct or simulation-ready.
-- Molecular editor coordinates are initially a 2D drawing with z=0. Use a real 3D builder/conformer generator and optimize with an appropriate method before production use.
-- CIF export from a molecular SDF is a container conversion, not crystal prediction.
-- Only SDF V2000, XYZ, and simple PDB atom records are parsed. CIF import/symmetry expansion is not included in this revision.
-- Software syntax and supported keywords can vary by installed version. Always validate before running calculations.
+- This is a **working prototype**, not yet a full Avogadro replacement. The atom/bond canvas is basic; visual bond edits are not yet a complete valence-aware molecular graph editor. For robust chemical structures, prefer SMILES or upload a valid SDF/MOL/XYZ.
+- Browser import is strongest for XYZ. Some SDF/MOL support depends on RDKit.js parsing. CIF is accepted as text in the file workspace but not fully parsed as a crystallographic structure in the browser.
+- Gaussian and ORCA builders generate editable starter templates. Advanced tasks such as ONIOM, Counterpoise, coordinate scans, NBO, EPR/NMR, DOCKER, GOAT, MD, NEB, CASSCF/NEVPT2 and DLPNO-CCSD(T) can require additional keywords, fragments, external files, or version-specific setup. Always check the generated file against the manual for your installed version.
+- DOCKER in the ORCA builder means ORCA's host–guest docking algorithm. It is not a Docker container launcher.
+- For Gaussian/ORCA input, the default coordinates are a sample water geometry until you load or generate your own structure. Verify charge, multiplicity, geometry, basis sets, method support and resource settings before submitting a calculation.
+- RDKit MMFF94/UFF is molecular mechanics, not DFT. A padded P1 CIF is a convenient coordinate container, not a predicted crystal structure.
+- The current backend has permissive CORS for local prototyping. Do not expose it to the public internet without authentication, restricted origins, and a security review.
 
-## References
+## Planned next increments
 
-- PACKMOL official examples: https://m3g.github.io/packmol/examples.shtml
-- PACKMOL official user guide: https://m3g.github.io/packmol/userguide.shtml
-- 3Dmol.js: https://3dmol.org/doc/
+1. Upgrade molecule editor to a robust 2D chemical editor + full 3D manipulation, valence validation, bond orders, stereochemistry, fragment attachment, and more import/export formats.
+2. Improve Gaussian and ORCA generators with versioned task presets, structured validation, separate charge/multiplicity and fragment/spin controls, checkpoint/restart and HPC script builders.
+3. Parse uploaded `.log`, `.out`, `.chk`/`.gbw`-related metadata where formats permit and add output visualization/analysis.
