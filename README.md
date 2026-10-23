@@ -39,6 +39,25 @@ uvicorn app:app --host 127.0.0.1 --port 8765
 
 Keep the terminal running. Then open the deployed page. Some browsers may restrict a hosted HTTPS page from connecting to a loopback HTTP service; if so, serve the page locally (for example, `python -m http.server 8000` from `public/`) or use the API directly. Local backend only performs RDKit molecular mechanics and structure export; it does not execute Gaussian or ORCA.
 
+## Fix RDKit local backend errors (Mac)
+
+The **Generate 3D + pre-optimize** and **Enumerate candidates** actions require the local Python API; they cannot call a backend that is not running. A GitHub Pages HTTPS tab may also be blocked by browser mixed-content/security rules when it tries to call a local HTTP API.
+
+1. Pull/download the latest repository files.
+2. In Terminal, go to the repository root (the folder containing `start-local-mac.sh`).
+3. Activate the Python/Conda environment that has RDKit installed.
+4. Run:
+   ```bash
+   bash start-local-mac.sh
+   ```
+5. Open `http://localhost:8000/rdkit-workbench.html`, then press **Check backend**. Leave that Terminal running while using the page.
+6. If the script reports missing packages, install the backend requirements in the active environment:
+   ```bash
+   python -m pip install -r backend/requirements.txt
+   ```
+
+The launcher starts the website on port 8000 and the API on port 8765. If either port is already in use, stop the old server or change the ports consistently in the script, API URL field, and instructions. Open the `http://localhost:8000` page—not the GitHub Pages URL—for local API functions.
+
 ## Current limitations (important)
 
 - This is a **working prototype**, not yet a full Avogadro replacement. The atom/bond canvas is basic; visual bond edits are not yet a complete valence-aware molecular graph editor. For robust chemical structures, prefer SMILES or upload a valid SDF/MOL/XYZ.
