@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Gaussian 16, ORCA & Multiwfn | Quantum Chemistry Studio</title>
+<style>
+:root{--ink:#172437;--muted:#65758b;--line:#dce4ee;--paper:#f4f7fb;--card:#fff;--teal:#087f80}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.65 system-ui,-apple-system,Segoe UI,sans-serif}header{background:#101f32;color:white;padding:20px max(20px,calc((100% - 980px)/2));display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}header a{color:#a9eeee;text-decoration:none}.wrap{max-width:980px;margin:auto;padding:26px 20px 60px}h1{font-size:clamp(28px,4vw,42px);line-height:1.12;letter-spacing:-.03em}h2{margin-top:34px;border-bottom:1px solid var(--line);padding-bottom:8px}h3{margin-bottom:6px}.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0}pre{overflow:auto;background:#101f32;color:#e6f4ff;border-radius:10px;padding:16px;font-size:13px}code{background:#edf2f8;padding:2px 4px;border-radius:4px}.note{background:#e8f5f4;border-radius:10px;padding:12px 14px}.muted{color:var(--muted)}a{color:var(--teal)}
+</style></head><body>
+<header><strong>Quantum Chemistry Studio · Workflow Guide</strong><a href="index.html">← Gaussian / ORCA Studio</a><a href="rdkit-workbench.html">RDKit Design Lab ↗</a></header>
+<main class="wrap"><p class="muted">PANDUAN PRAKTIS · INPUT DECK · POST-PROCESSING</p><h1>Gaussian 16, ORCA, dan Multiwfn</h1><p>Gunakan panduan ini untuk menyiapkan input yang dapat diedit dan ditinjau sebelum perhitungan dijalankan pada instalasi software asli atau HPC. Website tidak menjalankan Gaussian atau ORCA.</p>
+<div class="note"><strong>Prinsip penting:</strong> pastikan geometri, charge, multiplicity, metode, basis set, model pelarut, dan resource sesuai sistem. Template di bawah merupakan titik awal, bukan input universal.</div>
+<h2>1. Alur kerja yang disarankan</h2><div class="card"><ol><li>Bangun atau impor struktur, lalu periksa konektivitas, protonasi, dan muatan.</li><li>Generate geometri 3D. Praoptimasi MMFF94/UFF hanya untuk persiapan geometri, bukan hasil DFT.</li><li>Jalankan optimasi geometri dan frekuensi dengan metode yang sesuai.</li><li>Periksa konvergensi, imaginary frequencies, dan geometri hasil sebelum analisis lanjut.</li><li>Lakukan single-point energy atau analisis wavefunction jika diperlukan.</li></ol></div>
+<h2>2. Gaussian 16 — optimization + frequency</h2><pre>%chk=molecule.chk
+%mem=8GB
+%nprocshared=8
+#p B3LYP/def2SVP Opt Freq
+
+Molecular geometry optimization and frequencies
+
+0 1
+C  0.000000  0.000000  0.000000
+H  0.000000  0.000000  1.089000
+...</pre><p>Ganti koordinat, charge, multiplicity, method, basis set, dan resource. Jumlah prosesor dan memori harus sesuai kapasitas mesin. Periksa kompatibilitas basis set dan keyword di versi Gaussian yang digunakan.</p>
+<h3>Single-point energy dari checkpoint</h3><pre>%chk=molecule.chk
+%mem=8GB
+%nprocshared=8
+#p wB97XD/def2TZVP SP Geom=AllCheck Guess=Read
+
+Single point energy</pre><p><code>Geom=AllCheck</code> mengambil informasi geometri dan spesifikasi terkait dari checkpoint; pastikan checkpoint tersedia dan sesuai.</p>
+<h2>3. ORCA — optimization + frequency</h2><pre>! r2SCAN-3c Opt Freq TightSCF
+%pal nprocs 8 end
+%maxcore 3000
+* xyz 0 1
+C  0.000000  0.000000  0.000000
+H  0.000000  0.000000  1.089000
+...</pre><p><code>%maxcore</code> biasanya ditetapkan dalam MB per proses. Estimasikan memori total berdasarkan jumlah proses dan kebutuhan metode.</p>
+<h3>Single-point energy dari geometri file</h3><pre>! wB97X-D4 def2-TZVPP TightSCF
+%pal nprocs 8 end
+%maxcore 3000
+* xyzfile 0 1 optimized.xyz</pre><p>Pastikan method/basis/keyword tersedia pada versi ORCA yang dipasang. Periksa file output untuk status SCF, konvergensi, dan warning.</p>
+<h2>4. Analisis dengan Multiwfn</h2><div class="card"><ul><li><strong>Orbital dan populasi:</strong> periksa orbital frontier, komposisi orbital, dan populasi atom sesuai kebutuhan.</li><li><strong>ESP dan densitas:</strong> analisis electrostatic potential, charge distribution, dan permukaan densitas elektron.</li><li><strong>Ikatan dan topologi:</strong> gunakan analisis bond order, fungsi topologi, atau indeks yang didukung wavefunction dan build Multiwfn Anda.</li><li><strong>Format file:</strong> siapkan wavefunction yang kompatibel, misalnya Gaussian formatted checkpoint (FCHK) atau file ORCA yang didukung versi Multiwfn. Ikuti petunjuk format dari instalasi Anda.</li></ul></div><p>Gunakan GaussView, Avogadro, VMD, atau viewer lain untuk memeriksa struktur, mode vibrasi, dan visualisasi orbital.</p>
+<h2>5. RDKit Design Lab</h2><p>RDKit Design Lab menghitung deskriptor molekul dan dapat menghasilkan seri substituen dari scaffold SMILES dengan satu wildcard attachment <code>[*]</code>, misalnya <code>c1cc([*])ccc1</code>. Substituen dimasukkan satu SMILES per baris. Hasil enumerasi tidak menjamin sintesis, kestabilan, atau performa perangkat.</p>
+<h2>6. Batasan ilmiah dan lisensi</h2><div class="note">MMFF94/UFF merupakan mekanika molekuler, bukan DFT. Jangan membandingkan energi force-field langsung dengan energi elektronik DFT. Gaussian 16 adalah software komersial; gunakan instalasi dan lisensi yang sah. Semua input yang dibuat perlu ditinjau sebelum dijalankan.</div>
+<p class="muted">Quantum Chemistry Studio · Panduan workflow</p></main></body></html>

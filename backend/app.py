@@ -87,3 +87,76 @@ def export(req: BuildRequest):
         bio.seek(0)
         from fastapi.responses import StreamingResponse
         return StreamingResponse(bio, media_type="application/zip", headers={"Content-Disposition":"attachment; filename=rdkit_ase_structure_package.zip"})
+
+
+# --- Molecular design tools: descriptors and single-site substituent enumeration ---
+from rdkit.Chem import Descriptors, Lipinski, Crippen, QED
+
+class DescriptorRequest(BaseModel):
+    smiles: str = Field(min_length=1, max_length=2000)
+
+class EnumerationRequest(BaseModel):
+    core_smiles: str = Field(min_length=1, max_length=1000)
+    substituents: list[str] = Field(min_length=1, max_length=100)
+    max_results: int = Field(default=100, ge=1, le=100)
+
+def molecule_descriptors(smiles: str):
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        raise HTTPException(422, f"Invalid SMILES: {smiles}")
+    canonical = Chem.MolToSmiles(mol, canonical=True)
+    return {
+        "smiles": canonical,
+        "formula": rdMolDescriptors.CalcMolFormula(mol),
+        "atom_count": mol.GetNumAtoms(),
+        "formal_charge": int(Chem.GetFormalCharge(mol)),
+        "molecular_weight": round(float(Descriptors.MolWt(mol)), 4),
+        "exact_mass": round(float(Descriptors.ExactMolWt(mol)), 6),
+        "logp": round(float(Crippen.MolLogP(mol)), 4),
+        "tpsa": round(float(rdMolDescriptors.CalcTPSA(mol)), 4),
+        "hbd": int(Lipinski.NumHDonors(mol)),
+        "hba": int(Lipinski.NumHAcceptors(mol)),
+        "rotatable_bonds": int(Lipinski.NumRotatableBonds(mol)),
+        "rings": int(rdMolDescriptors.CalcNumRings(mol)),
+        "fraction_csp3": round(float(rdMolDescriptors.CalcFractionCSP3(mol)), 4),
+        "qed": round(float(QED.qed(mol)), 4),
+    }
+
+@app.post("/api/descriptors")
+def descriptors(req: DescriptorRequest):
+    return molecule_descriptors(req.smiles)
+
+@app.post("/api/enumerate")
+def enumerate_substituents(req: EnumerationRequest):
+    core = Chem.MolFromSmiles(req.core_smiles)
+    if core is None:
+        raise HTTPException(422, "Core scaffold is not valid SMILES.")
+    dummy = [a.GetIdx() for a in core.GetAtoms() if a.GetAtomicNum() == 0]
+    if len(dummy) != 1:
+        raise HTTPException(422, "Core scaffold must contain exactly one [*] attachment atom, e.g. c1cc([*])ccc1.")
+    results, seen = [], set()
+    errors = []
+    for raw in req.substituents[:req.max_results]:
+        s = raw.strip()
+        if not s:
+            continue
+        sub = Chem.MolFromSmiles(s)
+        if sub is None or any(a.GetAtomicNum() == 0 for a in sub.GetAtoms()):
+            errors.append({"substituent": s, "error": "Use a valid substituent SMILES without [*]."})
+            continue
+        try:
+            products = Chem.ReplaceSubstructs(core, Chem.MolFromSmarts("[#0]"), sub, replaceAll=True)
+            if not products:
+                raise ValueError("Replacement did not produce a molecule.")
+            product = products[0]
+            Chem.SanitizeMol(product)
+            smi = Chem.MolToSmiles(product, canonical=True)
+            if smi in seen:
+                continue
+            seen.add(smi)
+            row = molecule_descriptors(smi)
+            row["substituent"] = s
+            results.append(row)
+        except Exception as exc:
+            errors.append({"substituent": s, "error": str(exc)})
+    return {"core_smiles": Chem.MolToSmiles(core, canonical=True), "count": len(results), "results": results, "errors": errors}

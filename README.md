@@ -9,6 +9,14 @@ A modular web prototype for molecular structure preparation and generating/editi
 - `backend/app.py`: optional FastAPI service using RDKit + ASE for SMILES → ETKDG 3D geometry → MMFF94/UFF optimization and structure package export. `/api/optimize` returns optimized XYZ and metadata; `/api/export` returns ZIP containing XYZ/PDB/CIF/GEN where supported.
 - `.github/workflows/deploy.yml`: deploys the `public/` directory to GitHub Pages.
 
+## Recent additions
+
+- `public/rdkit-workbench.html`: dedicated RDKit Molecular Design Lab with SMILES depiction, descriptor export, scaffold substituent enumeration, and optional 3D pre-optimization.
+- `POST /api/descriptors`: molecular descriptor calculations.
+- `POST /api/enumerate`: single-attachment substituent enumeration for scaffolds containing exactly one `[*]` wildcard.
+- `backend/tests/test_app.py`: regression tests for descriptors and enumeration.
+- `public/workbench-guide.html`: Gaussian 16 / ORCA input examples and Multiwfn post-processing notes.
+
 ## Deploy to GitHub Pages
 
 1. Extract the ZIP and upload the **contents** of this folder to the repository root, preserving `public/`, `backend/`, and `.github/workflows/`.
