@@ -145,7 +145,7 @@ def enumerate_substituents(req: EnumerationRequest):
             errors.append({"substituent": s, "error": "Use a valid substituent SMILES without [*]."})
             continue
         try:
-            products = Chem.ReplaceSubstructs(core, Chem.MolFromSmarts("[*]"), sub, replaceAll=True)
+            products = Chem.ReplaceSubstructs(core, Chem.MolFromSmarts("[#0]"), sub, replaceAll=True)
             if not products:
                 raise ValueError("Replacement did not produce a molecule.")
             product = products[0]
