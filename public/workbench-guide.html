@@ -1,0 +1,80 @@
+# Quantum Chemistry Studio — Workbench Guide
+
+## 1. Choose the right workflow
+
+1. Use **Molecular Builder** to enter a SMILES or upload a structure, then inspect atom count, charge, and geometry.
+2. Use **RDKit Design Lab** for quick 2D structures, molecular descriptors, and single-site substituent series.
+3. Use **Gaussian 16** or **ORCA** tabs to create editable input decks.
+4. Inspect the generated input and coordinates before submitting a calculation. The website does not run Gaussian or ORCA.
+
+## 2. RDKit Design Lab
+
+- A SMILES depiction is a 2D representation, not a 3D optimized structure.
+- Descriptors available from the local backend: molecular weight, exact mass, Crippen cLogP, TPSA, H-bond donor/acceptor counts, rotatable bonds, ring count, fraction Csp3, QED, formula, and formal charge.
+- To enumerate a substituent series, provide one attachment point `[*]` in the core SMILES, e.g. `c1cc([*])ccc1`. Enter one substituent SMILES per line (e.g. `F`, `Cl`, `OC`, `C#N`). The output is a candidate list, not a synthesis-feasibility or property prediction.
+- The optional local service uses RDKit ETKDG to generate conformers and MMFF94/UFF to pre-optimize them. This is molecular mechanics, not DFT.
+
+## 3. Gaussian 16 — common input patterns
+
+### Geometry optimization and frequency
+```text
+%chk=molecule.chk
+%mem=8GB
+%nprocshared=8
+#p B3LYP/def2SVP Opt Freq
+
+Molecular geometry optimization and frequencies
+
+0 1
+C  0.000000  0.000000  0.000000
+...
+```
+
+### Single-point energy after optimization
+```text
+%chk=molecule.chk
+%mem=8GB
+%nprocshared=8
+#p wB97XD/def2TZVP SP Geom=AllCheck Guess=Read
+
+Single point energy
+
+```
+
+Replace the example route, charge, multiplicity, resources, and geometry as appropriate. `Geom=AllCheck` reads molecular specification from the checkpoint; verify the checkpoint is compatible.
+
+## 4. ORCA — common input patterns
+
+### Optimization and frequency
+```text
+! r2SCAN-3c Opt Freq TightSCF
+%pal nprocs 8 end
+%maxcore 3000
+* xyz 0 1
+C  0.000000  0.000000  0.000000
+...
+*
+```
+
+### Single-point energy with a larger basis
+```text
+! wB97X-D4 def2-TZVPP TightSCF
+%pal nprocs 8 end
+%maxcore 3000
+* xyzfile 0 1 optimized.xyz
+```
+
+`%maxcore` is commonly specified in MB per process; check available memory before increasing parallelism. Validate keywords and basis availability for your installed ORCA version.
+
+## 5. Post-processing
+
+- Use **Multiwfn** for wavefunction-based analysis such as molecular orbitals, density, electrostatic potential, bond orders, and population analyses. Prepare the required wavefunction file (e.g. Gaussian checkpoint/fchk or ORCA gbw, depending on the analysis and Multiwfn build).
+- Use GaussView, Avogadro, VMD, or another suitable viewer to inspect geometry and orbitals.
+- For a frequency calculation, check for imaginary frequencies and inspect the corresponding modes before calling a structure a minimum or transition state.
+
+## 6. Scientific safeguards
+
+- MMFF/UFF energies are force-field energies; do not compare them with DFT total energies.
+- Confirm protonation state, tautomer, spin state, charge, conformer, solvent model, and basis/method choices.
+- The substituent enumerator does not automatically guarantee synthetic accessibility, realistic substitution chemistry, or stable conformers.
+- Gaussian 16 is commercial software and requires authorized access. The web interface only prepares input files; calculations run in your licensed local installation or HPC environment.
