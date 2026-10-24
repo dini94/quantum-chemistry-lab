@@ -39,7 +39,7 @@ async function browserOptimize() {
       symbols: atomSymbols,
       coords,
       smiles: conformer.toSmiles(),
-      formula: conformer.getMolecularFormula(),
+      formula: conformer.getMolecularFormula().formula,
       xyz
     });
     notify('Browser-only · OpenChemLib/MMFF94 · energy ' + fmt(e0) + ' → ' + fmt(energy) +
