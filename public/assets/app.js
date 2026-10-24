@@ -1,7 +1,7 @@
 (() => {
 'use strict';
 const $=id=>document.getElementById(id); let rdkit=null, mol=null, atoms=[], bonds=[], currentXYZ='', currentSmiles='', selected=[], viewer=null, lastGaussian='',lastOrca='';
-const BACKEND=(window.QCS_API_BASE||'https://quantum-chemistry-lab-api.onrender.com').replace(/\/$/,'');
+
 const fragments=[['Benzene','c1ccccc1'],['Phenyl','c1ccccc1'],['Thiophene','c1ccsc1'],['Furan','c1ccoc1'],['Pyrrole','c1cc[nH]c1'],['Pyridine','n1ccccc1'],['Imidazole','c1ncc[nH]1'],['Thiazole','c1nccs1'],['Naphthalene','c1ccc2ccccc2c1'],['Carbazole','c1ccc2c(c1)[nH]c1ccccc12'],['Carboxylic acid','CC(=O)O'],['Carboxylate','CC(=O)[O-]'],['Methoxy','CO'],['Hydroxyl','O'],['Amine','N'],['Nitrile','CC#N'],['Phosphonic acid','CP(=O)(O)O'],['Sulfonic acid','CS(=O)(=O)O'],['Fluorobenzene','Fc1ccccc1'],['Chlorobenzene','Clc1ccccc1'],['Bromobenzene','Brc1ccccc1'],['Aniline','Nc1ccccc1'],['Phenol','Oc1ccccc1'],['Benzoic acid','O=C(O)c1ccccc1']];
 function notify(msg){$('backendStatus').textContent=msg}
 function download(name,text,mime='text/plain'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:mime}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500)}
