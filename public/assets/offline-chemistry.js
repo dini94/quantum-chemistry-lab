@@ -235,7 +235,7 @@ async function initOfflineChemistry() {
     status('databaseStatus','Mencari "'+q+'" di PubChem…');
     dbResults.innerHTML = '';
     try {
-      const url = 'https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/' + encodeURIComponent(q) + '/property/Title,CanonicalSMILES,IsomericSMILES,MolecularFormula,MolecularWeight/JSON';
+      const url = 'https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/' + encodeURIComponent(q) + '/property/IUPACName,CanonicalSMILES,IsomericSMILES,MolecularFormula,MolecularWeight/JSON';
       let response = await fetch(url);
       if (!response.ok) throw new Error(response.status===404 ? 'Tidak ada senyawa cocok di PubChem.' : 'PubChem merespons HTTP '+response.status);
       const data = await response.json();
@@ -243,7 +243,7 @@ async function initOfflineChemistry() {
       if (!rows.length) throw new Error('PubChem tidak mengembalikan struktur.');
       dbResults.innerHTML = '<table><thead><tr><th>Nama</th><th>Formula</th><th>SMILES</th><th>Aksi</th></tr></thead><tbody>' + rows.slice(0,20).map((r,i) => {
         const smi = r.IsomericSMILES || r.CanonicalSMILES || '';
-        return '<tr><td>'+esc(r.Title || q)+'</td><td>'+esc(r.MolecularFormula||'—')+'</td><td><code>'+esc(smi)+'</code></td><td><button type="button" data-use-pubchem="'+i+'">Build</button> <a href="https://pubchem.ncbi.nlm.nih.gov/compound/'+encodeURIComponent(r.CID)+'" target="_blank" rel="noopener">Record ↗</a></td></tr>';
+        return '<tr><td>'+esc(r.IUPACName || q)+'</td><td>'+esc(r.MolecularFormula||'—')+'</td><td><code>'+esc(smi)+'</code></td><td><button type="button" data-use-pubchem="'+i+'">Build</button> <a href="https://pubchem.ncbi.nlm.nih.gov/compound/'+encodeURIComponent(r.CID)+'" target="_blank" rel="noopener">Record ↗</a></td></tr>';
       }).join('') + '</tbody></table>';
       window.__qcsPubChemRows = rows.slice(0,20);
       dbResults.querySelectorAll('[data-use-pubchem]').forEach(b => b.addEventListener('click', () => {
