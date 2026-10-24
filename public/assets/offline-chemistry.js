@@ -36,7 +36,7 @@ function localDescriptors(smiles) {
   if (!mol) throw new Error('SMILES tidak valid menurut RDKit.js.');
   const d = JSON.parse(mol.get_descriptors());
   const oclMol = OCL.Molecule.fromSmiles(smiles);
-  const formula = oclMol.getMolecularFormula();
+  const formula = oclMol.getMolecularFormula().formula;
   const charge = Array.from({length: oclMol.getAllAtoms()}, (_, i) => oclMol.getAtomCharge(i)).reduce((a, b) => a + b, 0);
   const out = {
     smiles: mol.get_smiles(),
