@@ -212,9 +212,9 @@ async function initOfflineChemistry() {
       catch { status('status', 'Clipboard tidak tersedia pada browser ini. Salin SMILES secara manual.', 'warn'); }
     };
     $('checkBackend').onclick = () => status('backendStatus', 'Mode browser-only aktif. Tidak ada backend atau server API.', 'ok');
-    document.querySelectorAll('[data-smiles]').forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll('[data-smiles]').forEach((b) => { b.onclick = () => {
       $('smiles').value = b.dataset.smiles; buildLocal();
-    }));
+    }; });
     $('smiles').addEventListener('keydown', (e) => { if (e.key === 'Enter') buildLocal(); });
     buildLocal();
     status('backendStatus', 'Mode browser-only aktif · tidak ada backend · tidak ada billing.', 'ok');
