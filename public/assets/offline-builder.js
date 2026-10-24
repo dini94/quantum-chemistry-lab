@@ -1,5 +1,5 @@
 /* Browser-only 3D conformer generation + MMFF94 for the main molecular builder. */
-import * as OCL from 'https://cdn.jsdelivr.net/npm/openchemlib@9.25.1/+esm';
+let OCL = null; // Optional 3D engine; keep the main builder independent of this CDN.
 
 const $ = (id) => document.getElementById(id);
 const symbols = ['', 'H','He','Li','Be','B','C','N','O','F','Ne','Na','Mg','Al','Si','P','S','Cl','Ar','K','Ca','Sc','Ti','V','Cr','Mn','Fe','Co','Ni','Cu','Zn','Ga','Ge','As','Se','Br','Kr','Rb','Sr','Y','Zr','Nb','Mo','Tc','Ru','Rh','Pd','Ag','Cd','In','Sn','Sb','Te','I','Xe'];
@@ -16,7 +16,7 @@ async function browserOptimize() {
   button.disabled = true;
   notify('Generating a 3D conformer and minimising with MMFF94 in your browser…');
   try {
-    if (!ready) throw new Error('Browser chemistry engine is still loading; try again in a moment.');
+    if (!OCL || !ready) throw new Error('OpenChemLib 3D engine did not load. SMILES input remains available; check the 3D engine status below.');
     const smiles = $('smiles').value.trim();
     if (!smiles) throw new Error('Enter a SMILES string first.');
     const molecule = OCL.Molecule.fromSmiles(smiles);
@@ -54,11 +54,14 @@ window.QCSBrowserOptimize = browserOptimize;
 
 async function init() {
   try {
+    OCL = await import('https://cdn.jsdelivr.net/npm/openchemlib@9.25.1/+esm');
     await OCL.Resources.registerFromUrl('https://cdn.jsdelivr.net/npm/openchemlib@9.25.1/dist/resources.json');
     ready = true;
-    notify('Browser-only mode ready · RDKit.js + OpenChemLib/MMFF94 · no API server or billing.');
+    notify('Browser-only mode ready · OpenChemLib/MMFF94 3D engine loaded · no API server or billing.');
   } catch (error) {
-    notify('OpenChemLib resources failed to load. Check your internet/CDN and reload. ' + (error.message || error));
+    OCL = null;
+    ready = false;
+    notify('SMILES builder is separate from the optional 3D engine. OpenChemLib failed to load: ' + (error.message || error));
   }
 }
 init();
