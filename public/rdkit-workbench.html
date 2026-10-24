@@ -6,43 +6,48 @@
 <style>
 :root{--ink:#172437;--muted:#65758b;--line:#dce4ee;--paper:#f4f7fb;--card:#fff;--teal:#087f80;--blue:#245fe8;--soft:#e8f5f4;--warn:#fff4dc}
 *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.55 system-ui,-apple-system,Segoe UI,sans-serif}a{color:var(--teal)}button,input,textarea,select{font:inherit}button{border:0;border-radius:10px;padding:10px 14px;background:#e9eef6;color:var(--ink);cursor:pointer;font-weight:650}button.primary{background:var(--teal);color:white}button:disabled{opacity:.5;cursor:not-allowed}input,textarea,select{width:100%;border:1px solid var(--line);border-radius:9px;padding:10px;background:white;color:var(--ink)}label{display:block;font-weight:650;margin:9px 0 5px}.top{background:#101f32;color:#fff;padding:18px max(20px,calc((100% - 1240px)/2));display:flex;justify-content:space-between;align-items:center;gap:12px}.top a{color:#a9eeee;text-decoration:none}.brand{font-weight:800;font-size:17px}.brand small{display:block;color:#b7c6d8;font-weight:500;font-size:12px}.wrap{max-width:1240px;margin:auto;padding:28px 20px 60px}.hero{padding:26px 0 18px}.eyebrow{font-size:11px;letter-spacing:.16em;font-weight:800;color:var(--teal)}h1{font-size:clamp(30px,4vw,46px);line-height:1.08;margin:8px 0 12px;letter-spacing:-.035em}h2{font-size:22px;margin:0 0 8px}h3{font-size:16px;margin:0 0 8px}.muted,.hint{color:var(--muted);font-size:13px}.layout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr);gap:18px;align-items:start}.stack{display:grid;gap:16px}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 5px 18px #1c35500a}.row{display:flex;gap:8px;align-items:center}.row>*{flex:1}.row button{flex:0 0 auto}.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}.chips button{font-size:12px;padding:7px 10px}.canvas{min-height:285px;border:1px dashed var(--line);border-radius:12px;background:#fbfdff;display:grid;place-items:center;padding:8px;overflow:hidden}.canvas svg{max-width:100%;height:auto}.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:12px}.metric{border:1px solid var(--line);border-radius:10px;padding:10px}.metric b{display:block;font-size:18px}.metric span{font-size:11px;color:var(--muted)}.status{border-radius:10px;padding:10px 12px;background:#edf3fa;color:#42536a;font-size:13px;margin-top:10px;overflow-wrap:anywhere}.status.ok{background:var(--soft);color:#075e60}.status.warn{background:var(--warn);color:#805710}.tablewrap{overflow:auto;max-height:380px}table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);white-space:nowrap}th{background:#f4f7fb;position:sticky;top:0}td code{font-size:11px}.wide{grid-column:1/-1}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.small{font-size:12px}.viewer{height:300px;width:100%;border-radius:12px;overflow:hidden;background:#f8faff}.footer{margin-top:25px;color:var(--muted);font-size:12px}.pill{border-radius:99px;padding:4px 9px;background:#e7f5f4;color:#075e60;font-size:11px;font-weight:800}@media(max-width:850px){.layout{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px;padding:6px;background:#e9eef6;border-radius:13px}
+.tab{flex:1;min-width:145px;background:transparent;border:1px solid transparent}
+.tab.active{background:#fff;border-color:var(--line);box-shadow:0 2px 8px #1c35500a;color:var(--teal)}
+.tab-panel[hidden]{display:none!important}
+.tab-panel{margin-bottom:18px}
+.viewer{position:relative;display:block;height:340px;width:100%;min-height:340px;overflow:hidden;isolation:isolate;contain:layout paint;touch-action:pan-y}
+.viewer canvas,.viewer>canvas,.viewer .mol-container{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;display:block}
+.formgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 14px}
+@media(max-width:600px){.formgrid{grid-template-columns:1fr}.tab{min-width:100%}}
+
 </style>
 </head>
 <body>
 <header class="top"><div class="brand">Quantum Chemistry Studio<small>RDKit Molecular Design Lab · Module 05</small></div><div style="display:flex;gap:16px;flex-wrap:wrap"><a href="workbench-guide.html">Workflow guide ↗</a><a href="molecular-builder.html">Open Molecular Builder ↗</a> &nbsp; <a href="index.html">← Back to Gaussian / ORCA Studio</a></div></header>
 <main class="wrap">
-<section class="hero"><p class="eyebrow">MOLECULAR DESIGN WORKBENCH</p><h1>Explore structures. Compare descriptors. Design a series.</h1><p class="muted">SMILES-based molecular depiction runs in the browser with RDKit.js. SMILES depiction and descriptors run locally. For fragment assembly, browser-only 3D generation, and XYZ export, open the new Molecular Builder. All outputs are screening aids, not experimental predictions.</p><div class="actions"><span class="pill">2D depiction</span><span class="pill">Descriptors</span><span class="pill">Substituent enumeration</span><span class="pill">3D preview</span></div></section>
-
-<section class="card wide" id="databaseSearch">
-  <h2>00 · Search molecular databases</h2>
-  <p class="hint">Cari senyawa berdasarkan nama atau formula di PubChem. Pilih hasil untuk mengirim SMILES langsung ke builder. Pencarian memerlukan internet; struktur diproses di browser.</p>
-  <label for="databaseQuery">Nama senyawa / kata kunci</label>
-  <div class="row"><input id="databaseQuery" placeholder="Contoh: azobenzene, carbazole, 2PACz" autocomplete="off"><button id="searchDatabase" class="primary">Search PubChem</button></div>
-  <div class="actions"><a href="https://pubchem.ncbi.nlm.nih.gov/" target="_blank" rel="noopener">PubChem ↗</a><a href="https://www.ebi.ac.uk/chembl/" target="_blank" rel="noopener">ChEMBL ↗</a><a href="https://cartblanche22.docking.org/" target="_blank" rel="noopener">ZINC ↗</a></div>
-  <div id="databaseStatus" class="status">PubChem adalah sumber utama yang terhubung langsung. ChEMBL dan ZINC tersedia sebagai sumber eksternal; tidak semua database kimia memiliki API terbuka yang sama.</div>
-  <div id="databaseResults" class="tablewrap"></div>
-</section>
-<section class="card wide" id="smilesGuide">
-  <h2>SMILES tutorial · Buat dan modifikasi molekul sendiri</h2>
-  <p class="hint">SMILES adalah notasi teks untuk struktur kimia. Cara termudah: cari molekul di PubChem, salin Canonical/Isomeric SMILES, lalu ubah bagian tertentu dan validasi kembali dengan RDKit.</p>
-  <div class="tablewrap"><table><thead><tr><th>Konsep</th><th>Penulisan</th><th>Contoh</th></tr></thead><tbody>
-  <tr><td>Ikatan tunggal</td><td>Ditulis implisit</td><td><code>CCO</code> = etanol</td></tr>
-  <tr><td>Ikatan rangkap / tiga</td><td><code>=</code> / <code>#</code></td><td><code>C=C</code> etena; <code>C#N</code> nitril</td></tr>
-  <tr><td>Cincin</td><td>Nomor penutup cincin</td><td><code>c1ccccc1</code> = benzena</td></tr>
-  <tr><td>Aromatik</td><td>Huruf kecil</td><td><code>c1ccncc1</code> = piridina</td></tr>
-  <tr><td>Cabang</td><td>Tanda kurung</td><td><code>CC(=O)O</code> = asam asetat</td></tr>
-  <tr><td>Unsur / muatan</td><td>Kurung siku</td><td><code>[NH4+]</code>, <code>[O-]</code></td></tr>
-  <tr><td>Stereokimia</td><td><code>@</code>, <code>@@</code>, <code>/</code>, <code>\\</code></td><td>Jaga tanda ini bila stereokimia penting</td></tr>
-  </tbody></table></div>
-  <h3 style="margin-top:14px">Buat seri turunan dengan substitusi</h3>
-  <ol><li>Masukkan scaffold pada kolom <b>Core scaffold SMILES</b>.</li><li>Tempatkan tepat satu placeholder <code>[*]</code> pada posisi substitusi. Contoh: <code>c1cc([*])ccc1</code>.</li><li>Isi satu substituen per baris, misalnya <code>F</code>, <code>OC</code>, <code>C#N</code>, <code>C(=O)O</code>, atau <code>S(=O)(=O)N</code>.</li><li>Klik <b>Enumerate candidates</b>. RDKit.js memvalidasi dan menghilangkan SMILES duplikat di browser.</li><li>Pilih kandidat untuk membangun 2D, membuat konformer 3D, lalu ekspor XYZ/SDF.</li></ol>
-  <p class="hint"><b>Batasan:</b> substitusi teks sederhana bukan pengganti reaksi kimia atau pemeriksaan sintesis. Periksa posisi substitusi, valensi, protonasi, tautomer, stereokimia, dan kewajaran kimia setiap kandidat. Untuk modifikasi yang lebih kompleks, gunakan editor SMILES atau workflow berbasis reaksi RDKit.</p>
-</section>
-
-<div class="layout">
-<div class="stack">
-<section class="card"><h2>01 · Molecule input</h2><label for="smiles">SMILES</label><div class="row"><input id="smiles" value="COc1ccc(cc1)C(=O)O" spellcheck="false" aria-label="Molecule SMILES"><button id="build" class="primary">Build</button></div><div class="chips"><button data-smiles="c1ccccc1">Benzene</button><button data-smiles="COc1ccccc1">Anisole</button><button data-smiles="CC(=O)Oc1ccccc1C(=O)O">Aspirin</button><button data-smiles="NCC(=O)O">Glycine</button><button data-smiles="Cn1c(=O)c2c(ncn2C)n(C)c1=O">Caffeine</button></div><div id="status" class="status">Loading RDKit.js…</div><div id="depiction" class="canvas" aria-label="2D molecular structure"><span class="muted">Molecule depiction appears here.</span></div><div class="metrics" id="quickMetrics"></div><div class="actions"><button id="copySmiles">Copy canonical SMILES</button><button id="downloadCsv">Export descriptors CSV</button><button id="optimize" class="primary">Generate 3D + pre-optimize</button></div></section>
-<section class="card"><h2>02 · Scaffold substituent enumeration</h2><p class="hint">Place exactly one <code>[*]</code> at the substitution site in the scaffold SMILES. Each substituent must be a valid SMILES fragment without <code>[*]</code>.</p><label for="core">Core scaffold SMILES</label><input id="core" value="c1cc([*])ccc1" spellcheck="false"><label for="subs">Substituents (one SMILES per line)</label><textarea id="subs" rows="6" spellcheck="false">F
+<section class="hero"><p class="eyebrow">MOLECULAR WORKBENCH</p><h1>SMILES → 3D → Quantum-chemistry input</h1><p class="muted">Bangun struktur dari SMILES, lihat 2D/3D, lalu siapkan input ORCA atau Gaussian. Semua berjalan di browser; kalkulasi kuantum dijalankan di software Anda.</p></section>
+<div class="tabs" role="tablist" aria-label="Molecular workflow">
+  <button class="tab active" role="tab" aria-selected="true" data-tab="moleculePanel">1 · Molecule builder</button>
+  <button class="tab" role="tab" aria-selected="false" data-tab="orcaPanel">2 · ORCA input</button>
+  <button class="tab" role="tab" aria-selected="false" data-tab="gaussianPanel">3 · Gaussian input</button>
+</div>
+<section class="tab-panel active" id="moleculePanel" role="tabpanel">
+  <div class="layout">
+    <div class="stack">
+      <section class="card">
+        <h2>SMILES → 2D molecule</h2>
+        <p class="hint">Masukkan SMILES atau pilih contoh. Struktur dan descriptor dihitung di browser.</p>
+        <label for="smiles">SMILES</label>
+        <div class="row"><input id="smiles" value="c1ccc(cc1)N=Nc2ccccc2" spellcheck="false" aria-label="Molecule SMILES"><button id="build" class="primary">Build</button></div>
+        <div class="chips"><button data-smiles="c1ccccc1">Benzene</button><button data-smiles="c1ccc(cc1)N=Nc2ccccc2">Azobenzene</button><button data-smiles="COc1ccccc1">Anisole</button><button data-smiles="CC(=O)Oc1ccccc1C(=O)O">Aspirin</button><button data-smiles="NCC(=O)O">Glycine</button><button data-smiles="Cn1c(=O)c2c(ncn2C)n(C)c1=O">Caffeine</button></div>
+        <div id="status" class="status">Loading RDKit.js…</div>
+        <div id="depiction" class="canvas" aria-label="2D molecular structure"><span class="muted">Molecule depiction appears here.</span></div>
+        <div class="metrics" id="quickMetrics"></div>
+        <div class="actions"><button id="copySmiles">Copy canonical SMILES</button><button id="downloadCsv">Export descriptors CSV</button></div>
+      </section>
+      <section class="card">
+        <h2>Design substituent series</h2>
+        <p class="hint">Gunakan tepat satu <code>[*]</code> pada scaffold, lalu masukkan satu substituen SMILES per baris.</p>
+        <label for="core">Core scaffold SMILES</label><input id="core" value="c1cc([*])ccc1" spellcheck="false">
+        <label for="subs">Substituents</label>
+        <textarea id="subs" rows="5" spellcheck="false">F
 Cl
 Br
 OC
@@ -52,41 +57,102 @@ C#N
 C(=O)O
 C(=O)N
 N
-S(=O)(=O)N</textarea><div class="actions"><button id="enumerate" class="primary">Enumerate candidates</button><button id="downloadCandidates">Download candidates CSV</button></div><div id="enumStatus" class="status">Browser-only molecular descriptor and substituent tools.</div><div id="candidateTable" class="tablewrap"></div></section>
-</div>
-<div class="stack">
-<section class="card"><h2>03 · Molecular descriptors</h2><p class="hint">Calculated from the canonicalized input molecule. Values are molecular descriptors, not electronic-structure results.</p><div id="descriptorGrid" class="metrics"><div class="metric"><span>STATUS</span><b>—</b></div></div><div class="actions"><button id="downloadJson">Export descriptor JSON</button></div></section>
-<section class="card"><h2>04 · 3D structure preview</h2><div id="viewer3d" class="viewer"><div class="status">Build a molecule and run 3D pre-optimization.</div></div><p id="optStatus" class="hint">3D conformers are generated and minimized with OpenChemLib/MMFF94 directly in the browser. This is molecular mechanics, not DFT.</p><div class="actions"><button id="downloadXyz">Download XYZ</button><button id="downloadSdf">Download SDF</button></div></section>
-<section class="card"><h2>05 · Local processing status</h2><p class="hint">Pemrosesan struktur dan enumerasi berlangsung di browser. Pencarian PubChem membutuhkan koneksi internet; tidak ada backend berbayar.</p><label for="apiUrl">API endpoint</label><input id="apiUrl" value="" spellcheck="false"><p class="hint">Endpoint standar website. Ubah hanya jika pemilik layanan menerbitkan URL API baru.</p><div class="actions"><button id="checkBackend">Check online API</button></div><div id="backendStatus" class="status">Memeriksa layanan online…</div></section>
-</div>
-</div>
+S(=O)(=O)N</textarea>
+        <div class="actions"><button id="enumerate" class="primary">Enumerate candidates</button><button id="downloadCandidates">Download CSV</button></div>
+        <div id="enumStatus" class="status">Enumerasi SMILES di browser.</div><div id="candidateTable" class="tablewrap"></div>
+      </section>
+    </div>
+    <div class="stack">
+      <section class="card">
+        <h2>Molecular descriptors</h2>
+        <p class="hint">Descriptor struktur, bukan hasil perhitungan DFT.</p>
+        <div id="descriptorGrid" class="metrics"><div class="metric"><span>STATUS</span><b>—</b></div></div>
+        <div class="actions"><button id="downloadJson">Export JSON</button></div>
+      </section>
+      <section class="card" id="preview3dCard">
+        <h2>3D structure preview</h2>
+        <div id="viewer3d" class="viewer"><div class="status">Klik Build, lalu Generate 3D + pre-optimize.</div></div>
+        <p id="optStatus" class="status">Menyiapkan mesin konformer browser…</p>
+        <div class="actions"><button id="optimize" class="primary">Generate 3D + pre-optimize</button><button id="downloadXyz">Download XYZ</button><button id="downloadSdf">Download SDF</button></div>
+      </section>
+    </div>
+  </div>
+</section>
+<section class="tab-panel" id="orcaPanel" role="tabpanel" hidden>
+  <section class="card">
+    <h2>ORCA input builder</h2><p class="hint">Buat file input ORCA dari koordinat 3D yang sudah dihasilkan. Jalankan file ini dengan instalasi ORCA Anda; halaman ini tidak menjalankan kalkulasi ORCA.</p>
+    <div class="formgrid">
+      <div><label for="orcaMethod">Method</label><select id="orcaMethod"><option value="B3LYP">B3LYP</option><option value="PBE0">PBE0</option><option value="r2SCAN-3c">r2SCAN-3c</option><option value="ωB97X-D">ωB97X-D</option><option value="HF">HF</option></select></div>
+      <div><label for="orcaBasis">Basis set</label><select id="orcaBasis"><option>def2-SVP</option><option>def2-TZVP</option><option>def2-TZVPP</option><option>def2-SV(P)</option><option value="">Method default</option></select></div>
+      <div><label for="orcaTask">Task</label><select id="orcaTask"><option value="Opt">Geometry optimization</option><option value="SP">Single point</option><option value="Freq">Frequency</option><option value="Opt Freq">Optimization + frequency</option></select></div>
+      <div><label for="orcaCharge">Charge</label><input id="orcaCharge" type="number" value="0"></div>
+      <div><label for="orcaMult">Multiplicity</label><input id="orcaMult" type="number" min="1" value="1"></div>
+    </div>
+    <label for="orcaInput">Generated ORCA input</label><textarea id="orcaInput" rows="14" spellcheck="false" placeholder="Generate 3D first, then click Generate input."></textarea>
+    <div class="actions"><button id="makeOrca" class="primary">Generate ORCA input</button><button id="downloadOrca">Download .inp</button></div><div id="orcaStatus" class="status">Generate 3D first to create a geometry-based input.</div>
+  </section>
+</section>
+<section class="tab-panel" id="gaussianPanel" role="tabpanel" hidden>
+  <section class="card">
+    <h2>Gaussian input builder</h2><p class="hint">Buat file .gjf/.com untuk Gaussian 16. File ini adalah input template; pilih metode, basis, charge, multiplicity, dan resource sesuai sistem Anda.</p>
+    <div class="formgrid">
+      <div><label for="gauMethod">Method</label><select id="gauMethod"><option>B3LYP</option><option>PBE0</option><option>ωB97XD</option><option>CAM-B3LYP</option><option>HF</option><option>PM6</option></select></div>
+      <div><label for="gauBasis">Basis set</label><select id="gauBasis"><option>6-31G(d)</option><option>6-311G(d,p)</option><option>def2SVP</option><option>def2TZVP</option><option>STO-3G</option></select></div>
+      <div><label for="gauTask">Task</label><select id="gauTask"><option value="Opt">Geometry optimization</option><option value="SP">Single point</option><option value="Freq">Frequency</option><option value="Opt Freq">Optimization + frequency</option></select></div>
+      <div><label for="gauCharge">Charge</label><input id="gauCharge" type="number" value="0"></div>
+      <div><label for="gauMult">Multiplicity</label><input id="gauMult" type="number" min="1" value="1"></div>
+      <div><label for="gauMem">Memory</label><input id="gauMem" value="4GB"></div>
+      <div><label for="gauCores">Processors</label><input id="gauCores" type="number" min="1" value="8"></div>
+    </div>
+    <label for="gauInput">Generated Gaussian input</label><textarea id="gauInput" rows="14" spellcheck="false" placeholder="Generate 3D first, then click Generate input."></textarea>
+    <div class="actions"><button id="makeGaussian" class="primary">Generate Gaussian input</button><button id="downloadGaussian">Download .gjf</button></div><div id="gauStatus" class="status">Generate 3D first to create a geometry-based input.</div>
+  </section>
+</section>
+
 <p class="footer">Quantum Chemistry Studio · RDKit.js / RDKit Python / 3Dmol.js · Use validated structures and review all generated files before scientific calculations.</p>
 </main>
-<script src="https://unpkg.com/@rdkit/rdkit/dist/RDKit_minimal.js"></script><script src="https://3Dmol.org/build/3Dmol-min.js"></script>
+
 <script>
 (function(){
-const $=id=>document.getElementById(id), API=()=>($('apiUrl')?.value.trim().replace(/\/$/,'')||window.QCS_API_BASE||'');let rdkit=null,mol=null,descriptorData=null,candidates=[],xyzText='',sdfText='',viewer=null;
-const labels={molecular_weight:'Molecular weight (g/mol)',exact_mass:'Exact mass (Da)',logp:'Crippen cLogP',tpsa:'TPSA (Å²)',hbd:'H-bond donors',hba:'H-bond acceptors',rotatable_bonds:'Rotatable bonds',rings:'Ring count',fraction_csp3:'Fraction Csp3',qed:'QED'};
-function status(msg,kind=''){ $('status').className='status '+kind;$('status').textContent=msg}
-function fmt(v){return typeof v==='number'?Number(v.toFixed(3)).toString():String(v)}
-function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
-function download(name,content,type='text/plain'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
-function csv(rows){if(!rows.length)return '';const keys=[...new Set(rows.flatMap(r=>Object.keys(r)))];return [keys.join(','),...rows.map(r=>keys.map(k=>{const v=String(r[k]??'');return '"'+v.replaceAll('"','""')+'"'}).join(','))].join('\n')}
-function drawDescriptors(d){descriptorData=d;const keys=Object.keys(labels);$('descriptorGrid').innerHTML=keys.map(k=>'<div class="metric"><span>'+labels[k]+'</span><b>'+fmt(d[k]??'—')+'</b></div>').join('')+'<div class="metric"><span>Formula</span><b>'+d.formula+'</b></div><div class="metric"><span>Atoms</span><b>'+d.atom_count+'</b></div><div class="metric"><span>Formal charge</span><b>'+d.formal_charge+'</b></div>';$('quickMetrics').innerHTML='<div class="metric"><span>FORMULA</span><b>'+d.formula+'</b></div><div class="metric"><span>MW</span><b>'+fmt(d.molecular_weight)+'</b></div><div class="metric"><span>cLogP</span><b>'+fmt(d.logp)+'</b></div>'}
-function build(){
- if(!rdkit){status('RDKit.js belum termuat. Periksa koneksi internet atau CDN.','warn');return}
- const s=$('smiles').value.trim();if(!s){status('Masukkan SMILES terlebih dahulu.','warn');return}
- try{if(mol)mol.delete();mol=rdkit.get_mol(s);if(!mol)throw Error('SMILES tidak valid. Periksa valensi, tanda kurung, ring closure, dan muatan.');$('depiction').innerHTML=mol.get_svg(620,360);const desc=JSON.parse(mol.get_descriptors());const formula=mol.get_prop('_Name')||'';descriptorData={smiles:mol.get_smiles(),...desc,formula:desc.MolWt?undefined:formula};$('smiles').value=mol.get_smiles();status('Struktur valid menurut RDKit.js. Untuk nilai descriptor yang lengkap dan konsisten, gunakan tombol backend check atau endpoint Python.','ok');const d={molecular_weight:desc.amw??desc.MolWt??desc.MolWt,exact_mass:desc.exactmw,logp:desc.CrippenClogP??desc.MolLogP,tpsa:desc.tpsa??desc.TPSA,hbd:desc.NumHDonors,hba:desc.NumHAcceptors,rotatable_bonds:desc.NumRotatableBonds,rings:desc.NumRings,fraction_csp3:desc.FractionCSP3,qed:desc.qed,formula:desc.formula||'Use backend',atom_count:mol.get_num_atoms(),formal_charge:desc.NumHAcceptors===undefined?'—':(desc.formalCharge??'—')};drawDescriptors(d);if(false && (!Number.isFinite(d.molecular_weight)||!d.formula||d.formula==='Use backend')){fetch(API()+'/api/descriptors',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({smiles:s})}).then(async r=>{const j=await r.json();if(!r.ok)throw Error(j.detail||'Backend request failed');drawDescriptors(j)}).catch(()=>{});} }catch(e){status(e.message||'Gagal membuat struktur.','warn')}
-}
-async function checkBackend(){try{const r=await fetch(API()+'/api/health');const d=await r.json();if(!r.ok)throw Error('HTTP '+r.status);$('backendStatus').className='status ok';$('backendStatus').textContent='Backend aktif · RDKit '+d.rdkit+' · '+d.service;return true}catch(e){$('backendStatus').className='status warn';$('backendStatus').textContent='Tidak dapat menghubungi '+API()+'. Pastikan Terminal backend masih berjalan, port 8765 benar, dan buka halaman dari http://localhost:8000 (bukan GitHub Pages). Detail: '+e.message;return false}}
-$('build').onclick=build;document.querySelectorAll('[data-smiles]').forEach(b=>b.onclick=()=>{$('smiles').value=b.dataset.smiles;build()});$('copySmiles').onclick=()=>navigator.clipboard?.writeText($('smiles').value).then(()=>status('Canonical SMILES disalin.','ok'));$('downloadCsv').onclick=()=>{if(!descriptorData){status('Build molekul dahulu.','warn');return}download('molecular_descriptors.csv',csv([descriptorData]),'text/csv')};$('downloadJson').onclick=()=>{if(!descriptorData){status('Build molekul dahulu.','warn');return}download('molecular_descriptors.json',JSON.stringify(descriptorData,null,2),'application/json')};
-$('checkBackend').onclick=checkBackend;
-$('enumerate').onclick=async()=>{const core_smiles=$('core').value.trim(),substituents=$('subs').value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);if(!substituents.length){$('enumStatus').textContent='Tambahkan setidaknya satu substituen.';return}$('enumStatus').textContent='Mengirim permintaan ke API RDKit online…';try{const r=await fetch(API()+'/api/enumerate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({core_smiles,substituents,max_results:100})});const d=await r.json();if(!r.ok)throw Error(d.detail||'HTTP '+r.status);candidates=d.results||[];$('enumStatus').className='status ok';$('enumStatus').textContent='Berhasil: '+candidates.length+' kandidat unik.'+(d.errors?.length?' '+d.errors.length+' baris dilewati karena error.':'');$('candidateTable').innerHTML=candidates.length?'<table><thead><tr><th>#</th><th>Substituen</th><th>SMILES</th><th>Formula</th><th>MW</th><th>cLogP</th><th>TPSA</th><th>QED</th></tr></thead><tbody>'+candidates.map((x,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(x.substituent)+'</td><td><code>'+esc(x.smiles)+'</code></td><td>'+esc(x.formula)+'</td><td>'+esc(x.molecular_weight)+'</td><td>'+esc(x.logp)+'</td><td>'+esc(x.tpsa)+'</td><td>'+esc(x.qed)+'</td></tr>').join('')+'</tbody></table>':'No valid candidates returned.'}catch(e){$('enumStatus').className='status warn';$('enumStatus').textContent='Enumerasi gagal menghubungi '+API()+'. Periksa status API dan coba lagi. Detail: '+e.message}};
-$('downloadCandidates').onclick=()=>{if(!candidates.length){$('enumStatus').textContent='Jalankan enumerasi dahulu.';return}download('substituent_candidates.csv',csv(candidates),'text/csv')};
-$('optimize').onclick=()=>{status('optStatus','Gunakan Molecular Builder baru untuk membuat 3D dan mengunduh XYZ tanpa backend: molecular-builder.html.','warn');};$('downloadXyz').onclick=()=>xyzText?download('molecule.xyz',xyzText):($('optStatus').textContent='Jalankan 3D pre-optimize dahulu.');$('downloadSdf').onclick=async()=>{if(!mol){$('optStatus').textContent='Build molekul dahulu.';return}try{const r=await fetch(API()+'/api/export',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({smiles:$('smiles').value.trim(),force_field:'MMFF94',add_hydrogens:true,max_iterations:1000})});if(!r.ok)throw Error('Backend tidak tersedia');download('rdkit_ase_structure_package.zip',await r.blob(),'application/zip')}catch(e){$('optStatus').textContent='Paket ekspor SDF/XYZ/PDB/CIF/GEN membutuhkan backend aktif: '+e.message}};
-// RDKit.js initialization is handled by assets/offline-chemistry.js.
-// checkBackend disabled: browser-only mode; no API server is required.
+  const $=id=>document.getElementById(id);
+  document.querySelectorAll('[data-tab]').forEach(btn=>btn.addEventListener('click',()=>{
+    document.querySelectorAll('[data-tab]').forEach(b=>{const active=b===btn;b.classList.toggle('active',active);b.setAttribute('aria-selected',String(active));});
+    document.querySelectorAll('.tab-panel').forEach(p=>{const active=p.id===btn.dataset.tab;p.hidden=!active;p.classList.toggle('active',active);});
+    if(btn.dataset.tab==='moleculePanel'&&window.QCS_RESIZE_3D) setTimeout(window.QCS_RESIZE_3D,80);
+  }));
+  function getGeom(){
+    const xyz=window.QCS_LAST_XYZ||'';
+    const lines=xyz.trim().split(/\r?\n/);
+    if(lines.length<3||!/^\d+$/.test(lines[0].trim())) throw Error('Buat struktur 3D terlebih dahulu pada tab Molecule builder.');
+    return {n:lines[0].trim(),atoms:lines.slice(2).filter(Boolean).join('\n')};
+  }
+  function safeName(){return (($('smiles')?.value||'molecule').replace(/[^a-zA-Z0-9_-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,40)||'molecule');}
+  function makeOrca(){
+    const g=getGeom(),method=$('orcaMethod').value,basis=$('orcaBasis').value,task=$('orcaTask').value;
+    const charge=Number($('orcaCharge').value),mult=Math.max(1,Number($('orcaMult').value)||1);
+    const route='! '+[method,basis,task].filter(Boolean).join(' ');
+    $('orcaInput').value=route+'\n%pal nprocs 8 end\n%maxcore 2000\n\n* xyz '+charge+' '+mult+'\n'+g.atoms+'\n*\n';
+    $('orcaStatus').className='status ok';$('orcaStatus').textContent='Input dibuat dari geometri 3D. Sesuaikan nprocs/maxcore dengan sumber daya komputer atau HPC Anda.';
+  }
+  function makeGaussian(){
+    const g=getGeom(),method=$('gauMethod').value,basis=$('gauBasis').value,task=$('gauTask').value;
+    const charge=Number($('gauCharge').value),mult=Math.max(1,Number($('gauMult').value)||1);
+    const mem=$('gauMem').value.trim()||'4GB',cores=Math.max(1,Number($('gauCores').value)||1);
+    $('gauInput').value='%chk='+safeName()+'.chk\n%mem='+mem+'\n%nprocshared='+cores+'\n#p '+method+'/'+basis+' '+task+'\n\nGenerated by Quantum Chemistry Studio\n\n'+charge+' '+mult+'\n'+g.atoms+'\n\n';
+    $('gauStatus').className='status ok';$('gauStatus').textContent='Input dibuat dari geometri 3D. Periksa metode/basis, charge, multiplicity, dan resource sebelum menjalankan Gaussian.';
+  }
+  function downloadText(filename,text){
+    if(!text.trim()) throw Error('Generate input dahulu.');
+    const url=URL.createObjectURL(new Blob([text],{type:'text/plain;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+  $('makeOrca').addEventListener('click',()=>{try{makeOrca()}catch(e){$('orcaStatus').className='status warn';$('orcaStatus').textContent=e.message}});
+  $('makeGaussian').addEventListener('click',()=>{try{makeGaussian()}catch(e){$('gauStatus').className='status warn';$('gauStatus').textContent=e.message}});
+  $('downloadOrca').addEventListener('click',()=>{try{downloadText(safeName()+'.inp',$('orcaInput').value)}catch(e){$('orcaStatus').className='status warn';$('orcaStatus').textContent=e.message}});
+  $('downloadGaussian').addEventListener('click',()=>{try{downloadText(safeName()+'.gjf',$('gauInput').value)}catch(e){$('gauStatus').className='status warn';$('gauStatus').textContent=e.message}});
 })();
 </script>
+
+<script src="https://unpkg.com/@rdkit/rdkit/dist/RDKit_minimal.js"></script><script src="https://3Dmol.org/build/3Dmol-min.js"></script>
+
 <script type="module" src="assets/offline-chemistry.js"></script>
 </body></html>
