@@ -38,7 +38,7 @@ S(=O)(=O)N</textarea><div class="actions"><button id="enumerate" class="primary"
 <script src="https://unpkg.com/@rdkit/rdkit/dist/RDKit_minimal.js"></script><script src="https://3Dmol.org/build/3Dmol-min.js"></script>
 <script>
 (function(){
-const $=id=>document.getElementById(id), API=()=>($('apiUrl')?.value.trim().replace(/\/$/,'')||window.QCS_API_BASE||'https://quantum-chemistry-lab-api.onrender.com');let rdkit=null,mol=null,descriptorData=null,candidates=[],xyzText='',sdfText='',viewer=null;
+const $=id=>document.getElementById(id), API=()=>($('apiUrl')?.value.trim().replace(/\/$/,'')||window.QCS_API_BASE||'');let rdkit=null,mol=null,descriptorData=null,candidates=[],xyzText='',sdfText='',viewer=null;
 const labels={molecular_weight:'Molecular weight (g/mol)',exact_mass:'Exact mass (Da)',logp:'Crippen cLogP',tpsa:'TPSA (Å²)',hbd:'H-bond donors',hba:'H-bond acceptors',rotatable_bonds:'Rotatable bonds',rings:'Ring count',fraction_csp3:'Fraction Csp3',qed:'QED'};
 function status(msg,kind=''){ $('status').className='status '+kind;$('status').textContent=msg}
 function fmt(v){return typeof v==='number'?Number(v.toFixed(3)).toString():String(v)}
