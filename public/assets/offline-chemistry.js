@@ -190,7 +190,7 @@ function updateOfflineUi() {
 async function initOfflineChemistry() {
   updateOfflineUi();
   try {
-    await OCL.Resources.registerFromUrl('https://cdn.jsdelivr.net/npm/openchemlib@9.25.1/resources.json');
+    await OCL.Resources.registerFromUrl('https://cdn.jsdelivr.net/npm/openchemlib@9.25.1/dist/resources.json');
     oclReady = true;
     status('optStatus', 'Mesin konformer dan MMFF94 browser siap. Struktur diproses di perangkat Anda.', 'ok');
   } catch (e) {
