@@ -2,7 +2,7 @@
  * RDKit.js handles SMILES validation and descriptors; OpenChemLib handles 3D conformers
  * and MMFF94 minimisation entirely in the visitor's browser. No API server is used.
  */
-import * as OCL from 'https://cdn.jsdelivr.net/npm/openchemlib@9.25.1/+esm';
+let OCL = null; // Load independently so an OpenChemLib CDN failure cannot disable RDKit/SMILES.
 
 const $ = (id) => document.getElementById(id);
 const status = (id, message, kind = '') => {
@@ -35,9 +35,15 @@ function localDescriptors(smiles) {
   const mol = rdkit.get_mol(smiles);
   if (!mol) throw new Error('SMILES tidak valid menurut RDKit.js.');
   const d = JSON.parse(mol.get_descriptors());
-  const oclMol = OCL.Molecule.fromSmiles(smiles);
-  const formula = oclMol.getMolecularFormula().formula;
-  const charge = Array.from({length: oclMol.getAllAtoms()}, (_, i) => oclMol.getAtomCharge(i)).reduce((a, b) => a + b, 0);
+  let formula = 'Unavailable (OpenChemLib not loaded)';
+  let charge = null;
+  if (OCL) {
+    try {
+      const oclMol = OCL.Molecule.fromSmiles(smiles);
+      formula = oclMol.getMolecularFormula().formula;
+      charge = Array.from({length: oclMol.getAllAtoms()}, (_, i) => oclMol.getAtomCharge(i)).reduce((a, b) => a + b, 0);
+    } catch (_) { /* RDKit depiction and descriptors remain usable independently. */ }
+  }
   const out = {
     smiles: mol.get_smiles(),
     formula,
@@ -92,6 +98,7 @@ function buildLocal() {
 }
 
 function make3D() {
+  if (!OCL) throw new Error('OpenChemLib gagal dimuat; fitur 3D terpisah dari pembacaan SMILES.');
   if (!oclReady) throw new Error('Mesin 3D browser belum selesai dimuat. Tunggu sebentar lalu coba lagi.');
   const smiles = $('smiles').value.trim();
   if (!smiles) throw new Error('Masukkan SMILES terlebih dahulu.');
@@ -189,24 +196,20 @@ function updateOfflineUi() {
 
 async function initOfflineChemistry() {
   updateOfflineUi();
+
+  // RDKit is the primary SMILES/2D engine. Initialise it first and independently.
   try {
-    await OCL.Resources.registerFromUrl('https://cdn.jsdelivr.net/npm/openchemlib@9.25.1/dist/resources.json');
-    oclReady = true;
-    status('optStatus', 'Mesin konformer dan MMFF94 browser siap. Struktur diproses di perangkat Anda.', 'ok');
-  } catch (e) {
-    status('optStatus', 'RDKit.js masih tersedia, tetapi data pendukung OpenChemLib gagal dimuat. Periksa koneksi/CDN dan muat ulang. Detail: ' + (e.message || e), 'warn');
-  }
-  try {
-    if (window.initRDKitModule) rdkit = await window.initRDKitModule();
-    else throw new Error('RDKit.js CDN tidak tersedia.');
+    if (typeof window.initRDKitModule !== 'function') {
+      throw new Error('RDKit_minimal.js tidak tersedia dari CDN unpkg.');
+    }
+    rdkit = await window.initRDKitModule();
     $('build').onclick = buildLocal;
-    $('optimize').onclick = optimiseLocal;
     $('enumerate').onclick = enumerateLocal;
     $('downloadCsv').onclick = () => lastDesc ? download('molecular_descriptors.csv', csv([lastDesc]), 'text/csv') : status('status', 'Build molekul dahulu.', 'warn');
     $('downloadJson').onclick = () => lastDesc ? download('molecular_descriptors.json', JSON.stringify(lastDesc, null, 2), 'application/json') : status('status', 'Build molekul dahulu.', 'warn');
     $('downloadCandidates').onclick = () => lastCandidates.length ? download('substituent_candidates.csv', csv(lastCandidates), 'text/csv') : status('enumStatus', 'Jalankan enumerasi dahulu.', 'warn');
-    $('downloadXyz').onclick = () => lastXYZ ? download('molecule.xyz', lastXYZ) : status('optStatus', 'Jalankan 3D + pre-optimize dahulu.', 'warn');
-    $('downloadSdf').onclick = () => lastSDF ? download('molecule.sdf', lastSDF, 'chemical/x-mdl-sdfile') : status('optStatus', 'Jalankan 3D + pre-optimize dahulu.', 'warn');
+    $('downloadXyz').onclick = () => lastXYZ ? download('molecule_3d_mmff94.xyz', lastXYZ) : status('optStatus', 'Jalankan 3D + pre-optimize dahulu.', 'warn');
+    $('downloadSdf').onclick = () => lastSDF ? download('molecule_3d_mmff94.sdf', lastSDF, 'chemical/x-mdl-sdfile') : status('optStatus', 'Jalankan 3D + pre-optimize dahulu.', 'warn');
     $('copySmiles').onclick = async () => {
       try { await navigator.clipboard.writeText($('smiles').value); status('status', 'Canonical SMILES disalin.', 'ok'); }
       catch { status('status', 'Clipboard tidak tersedia pada browser ini. Salin SMILES secara manual.', 'warn'); }
@@ -219,7 +222,20 @@ async function initOfflineChemistry() {
     buildLocal();
     status('backendStatus', 'Mode browser-only aktif · tidak ada backend · tidak ada billing.', 'ok');
   } catch (e) {
-    status('status', 'RDKit.js tidak berhasil dimuat: ' + (e.message || e), 'warn');
+    status('status', 'RDKit.js tidak berhasil dimuat: ' + (e.message || e) + '. Coba muat ulang; fitur 3D tidak memengaruhi RDKit.', 'warn');
+    return;
+  }
+
+  // OpenChemLib is optional for 2D/SMILES. Load it separately for 3D only.
+  try {
+    OCL = await import('https://cdn.jsdelivr.net/npm/openchemlib@9.25.1/+esm');
+    await OCL.Resources.registerFromUrl('https://cdn.jsdelivr.net/npm/openchemlib@9.25.1/dist/resources.json');
+    oclReady = true;
+    status('optStatus', 'Mesin konformer dan MMFF94 browser siap. Struktur diproses di perangkat Anda.', 'ok');
+  } catch (e) {
+    OCL = null;
+    oclReady = false;
+    status('optStatus', 'SMILES/2D tetap tersedia. Mesin 3D OpenChemLib gagal dimuat: ' + (e.message || e), 'warn');
   }
 }
 
