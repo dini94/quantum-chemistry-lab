@@ -194,14 +194,35 @@ function updateOfflineUi() {
   if (footer) footer.textContent = 'Quantum Chemistry Studio · RDKit.js + OpenChemLib/MMFF94 + 3Dmol.js · Browser-only processing. Review all structures before quantum-chemical calculations.';
 }
 
+async function ensureRDKitScript() {
+  if (typeof window.initRDKitModule === 'function') return;
+  const sources = [
+    'https://unpkg.com/@rdkit/rdkit/dist/RDKit_minimal.js',
+    'https://cdn.jsdelivr.net/npm/@rdkit/rdkit/dist/RDKit_minimal.js'
+  ];
+  let lastError;
+  for (const src of sources) {
+    try {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = resolve;
+        script.onerror = () => { script.remove(); reject(new Error('Gagal memuat ' + src)); };
+        document.head.appendChild(script);
+      });
+      if (typeof window.initRDKitModule === 'function') return;
+      lastError = new Error('Skrip dimuat tetapi initRDKitModule tidak tersedia: ' + src);
+    } catch (e) { lastError = e; }
+  }
+  throw lastError || new Error('RDKit.js tidak tersedia dari CDN yang dicoba.');
+}
+
 async function initOfflineChemistry() {
   updateOfflineUi();
 
   // RDKit is the primary SMILES/2D engine. Initialise it first and independently.
   try {
-    if (typeof window.initRDKitModule !== 'function') {
-      throw new Error('RDKit_minimal.js tidak tersedia dari CDN unpkg.');
-    }
+    await ensureRDKitScript();
     rdkit = await window.initRDKitModule();
     $('build').onclick = buildLocal;
     $('enumerate').onclick = enumerateLocal;
