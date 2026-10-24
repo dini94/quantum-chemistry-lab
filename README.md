@@ -5,15 +5,15 @@ A modular web prototype for molecular structure preparation and generating/editi
 ## What's included
 
 - `public/index.html`: single-page interface with four tabs: Molecular Builder, Gaussian 16, ORCA, Upload/Edit.
-- `public/assets/app.js`: SMILES depiction (RDKit.js), basic atom/visual-bond editing, XYZ import/export, PDB export, input generation, file upload/edit/download.
+- `public/assets/app.js`: SMILES depiction (RDKit.js), basic atom/visual-bond editing, browser-side 3D optimization hook, XYZ import/export, PDB export, input generation, file upload/edit/download.
+- `public/assets/offline-builder.js`: browser-side 3D conformer generation and MMFF94 minimization using OpenChemLib; no Python API server is required.
 - `backend/app.py`: optional FastAPI service using RDKit + ASE for SMILES → ETKDG 3D geometry → MMFF94/UFF optimization and structure package export. `/api/optimize` returns optimized XYZ and metadata; `/api/export` returns ZIP containing XYZ/PDB/CIF/GEN where supported.
 - `.github/workflows/deploy.yml`: deploys the `public/` directory to GitHub Pages.
 
 ## Recent additions
 
-- `public/rdkit-workbench.html`: dedicated RDKit Molecular Design Lab with SMILES depiction, descriptor export, scaffold substituent enumeration, and optional 3D pre-optimization.
-- `POST /api/descriptors`: molecular descriptor calculations.
-- `POST /api/enumerate`: single-attachment substituent enumeration for scaffolds containing exactly one `[*]` wildcard.
+- `public/rdkit-workbench.html`: browser-only RDKit Molecular Design Lab with SMILES depiction, descriptor export, scaffold substituent enumeration, 3D conformer generation, and MMFF94 pre-optimization.
+- `public/assets/offline-chemistry.js`: local-in-browser descriptors, substituent enumeration, 3D conformers, MMFF94 minimization, and XYZ/SDF export.
 - `backend/tests/test_app.py`: regression tests for descriptors and enumeration.
 - `public/workbench-guide.html`: Gaussian 16 / ORCA input examples and Multiwfn post-processing notes.
 
@@ -26,34 +26,13 @@ A modular web prototype for molecular structure preparation and generating/editi
 
 The web app's SMILES 2D depiction uses the RDKit.js CDN and the 3D preview uses 3Dmol.js CDN. A network connection is needed for those libraries.
 
-The frontend is hosted on GitHub Pages and the Python RDKit/ASE API is deployed separately on Render. The repository includes `render.yaml` for a one-time browser-based deployment.
+## Free public hosting (no backend or billing)
 
-1. Open [Render](https://render.com/) and sign in with GitHub.
-2. Choose **New → Blueprint**, connect `dini94/quantum-chemistry-lab`, and select `main` after this change is merged.
-3. Review the service `quantum-chemistry-lab-api` and approve creation. Render builds from `backend/`, installs `backend/requirements.txt`, and starts FastAPI automatically.
-4. Wait for `/api/health` to pass. The default API URL is `https://quantum-chemistry-lab-api.onrender.com`. If Render assigns another URL, update the endpoint in `public/rdkit-workbench.html` and `BACKEND` in `public/assets/app.js`.
-5. GitHub Pages publishes the frontend automatically. Visitors use the website in a browser; no local Python or Terminal is required.
+The public website is hosted as a static site on GitHub Pages. The main Molecular Builder and RDKit Design Lab use browser-side JavaScript/WebAssembly for molecular depiction, descriptors, substituent enumeration, 3D conformer generation, MMFF94 minimization, and XYZ/SDF export. Visitors do not need Python, a local terminal, an account, a backend server, or a paid hosting service.
 
-**Hosting note:** Render's free web service may sleep after 15 minutes without traffic and can take around a minute to wake up. This is suitable for an initial public prototype, not a production SLA. See [Render's official limitations](https://render.com/docs/free). The API endpoints are publicly callable; CORS is not authentication. Gaussian 16 and ORCA are not run by this API; the website only generates input files for those licensed programs.
+OpenChemLib and RDKit.js are loaded from public CDNs, so an internet connection is required when the page first loads. Molecular processing runs in the visitor browser; the structure is not uploaded to this project server. Gaussian 16 and ORCA calculations are not executed by the website: it prepares input files for software installations that the user is authorized to use.
 
-## Fix RDKit local backend errors (Mac)
-
-The **Generate 3D + pre-optimize** and **Enumerate candidates** actions require the local Python API; they cannot call a backend that is not running. A GitHub Pages HTTPS tab may also be blocked by browser mixed-content/security rules when it tries to call a local HTTP API.
-
-1. Pull/download the latest repository files.
-2. In Terminal, go to the repository root (the folder containing `start-local-mac.sh`).
-3. Activate the Python/Conda environment that has RDKit installed.
-4. Run:
-   ```bash
-   bash start-local-mac.sh
-   ```
-5. Open `http://localhost:8000/rdkit-workbench.html`, then press **Check backend**. Leave that Terminal running while using the page.
-6. If the script reports missing packages, install the backend requirements in the active environment:
-   ```bash
-   python -m pip install -r backend/requirements.txt
-   ```
-
-The launcher does not open the browser until both the website and API pass a real HTTP health check. If startup fails, it prints the last log lines and stores full logs under `/tmp/quantum-chemistry-studio/`. If either port is already in use, it stops with a clear message rather than silently connecting to another process. Alternative ports are supported with `QCS_API_PORT=8766 QCS_WEB_PORT=8001 bash start-local-mac.sh`; in that case set the page's API URL to `http://127.0.0.1:8766` and open `http://localhost:8001/rdkit-workbench.html`. Open the local page—not GitHub Pages—for local API functions.
+The backend/ folder remains as an optional self-hosted Python implementation for developers who want to run the API themselves; the public GitHub Pages site no longer depends on it. Do not create a Render service or add billing details for this browser-only deployment.
 
 ## Current limitations (important)
 
