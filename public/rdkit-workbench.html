@@ -12,6 +12,33 @@
 <header class="top"><div class="brand">Quantum Chemistry Studio<small>RDKit Molecular Design Lab · Module 05</small></div><div style="display:flex;gap:16px;flex-wrap:wrap"><a href="workbench-guide.html">Workflow guide ↗</a><a href="molecular-builder.html">Open Molecular Builder ↗</a> &nbsp; <a href="index.html">← Back to Gaussian / ORCA Studio</a></div></header>
 <main class="wrap">
 <section class="hero"><p class="eyebrow">MOLECULAR DESIGN WORKBENCH</p><h1>Explore structures. Compare descriptors. Design a series.</h1><p class="muted">SMILES-based molecular depiction runs in the browser with RDKit.js. SMILES depiction and descriptors run locally. For fragment assembly, browser-only 3D generation, and XYZ export, open the new Molecular Builder. All outputs are screening aids, not experimental predictions.</p><div class="actions"><span class="pill">2D depiction</span><span class="pill">Descriptors</span><span class="pill">Substituent enumeration</span><span class="pill">3D preview</span></div></section>
+
+<section class="card wide" id="databaseSearch">
+  <h2>00 · Search molecular databases</h2>
+  <p class="hint">Cari senyawa berdasarkan nama atau formula di PubChem. Pilih hasil untuk mengirim SMILES langsung ke builder. Pencarian memerlukan internet; struktur diproses di browser.</p>
+  <label for="databaseQuery">Nama senyawa / kata kunci</label>
+  <div class="row"><input id="databaseQuery" placeholder="Contoh: azobenzene, carbazole, 2PACz" autocomplete="off"><button id="searchDatabase" class="primary">Search PubChem</button></div>
+  <div class="actions"><a href="https://pubchem.ncbi.nlm.nih.gov/" target="_blank" rel="noopener">PubChem ↗</a><a href="https://www.ebi.ac.uk/chembl/" target="_blank" rel="noopener">ChEMBL ↗</a><a href="https://cartblanche22.docking.org/" target="_blank" rel="noopener">ZINC ↗</a></div>
+  <div id="databaseStatus" class="status">PubChem adalah sumber utama yang terhubung langsung. ChEMBL dan ZINC tersedia sebagai sumber eksternal; tidak semua database kimia memiliki API terbuka yang sama.</div>
+  <div id="databaseResults" class="tablewrap"></div>
+</section>
+<section class="card wide" id="smilesGuide">
+  <h2>SMILES tutorial · Buat dan modifikasi molekul sendiri</h2>
+  <p class="hint">SMILES adalah notasi teks untuk struktur kimia. Cara termudah: cari molekul di PubChem, salin Canonical/Isomeric SMILES, lalu ubah bagian tertentu dan validasi kembali dengan RDKit.</p>
+  <div class="tablewrap"><table><thead><tr><th>Konsep</th><th>Penulisan</th><th>Contoh</th></tr></thead><tbody>
+  <tr><td>Ikatan tunggal</td><td>Ditulis implisit</td><td><code>CCO</code> = etanol</td></tr>
+  <tr><td>Ikatan rangkap / tiga</td><td><code>=</code> / <code>#</code></td><td><code>C=C</code> etena; <code>C#N</code> nitril</td></tr>
+  <tr><td>Cincin</td><td>Nomor penutup cincin</td><td><code>c1ccccc1</code> = benzena</td></tr>
+  <tr><td>Aromatik</td><td>Huruf kecil</td><td><code>c1ccncc1</code> = piridina</td></tr>
+  <tr><td>Cabang</td><td>Tanda kurung</td><td><code>CC(=O)O</code> = asam asetat</td></tr>
+  <tr><td>Unsur / muatan</td><td>Kurung siku</td><td><code>[NH4+]</code>, <code>[O-]</code></td></tr>
+  <tr><td>Stereokimia</td><td><code>@</code>, <code>@@</code>, <code>/</code>, <code>\\</code></td><td>Jaga tanda ini bila stereokimia penting</td></tr>
+  </tbody></table></div>
+  <h3 style="margin-top:14px">Buat seri turunan dengan substitusi</h3>
+  <ol><li>Masukkan scaffold pada kolom <b>Core scaffold SMILES</b>.</li><li>Tempatkan tepat satu placeholder <code>[*]</code> pada posisi substitusi. Contoh: <code>c1cc([*])ccc1</code>.</li><li>Isi satu substituen per baris, misalnya <code>F</code>, <code>OC</code>, <code>C#N</code>, <code>C(=O)O</code>, atau <code>S(=O)(=O)N</code>.</li><li>Klik <b>Enumerate candidates</b>. RDKit.js memvalidasi dan menghilangkan SMILES duplikat di browser.</li><li>Pilih kandidat untuk membangun 2D, membuat konformer 3D, lalu ekspor XYZ/SDF.</li></ol>
+  <p class="hint"><b>Batasan:</b> substitusi teks sederhana bukan pengganti reaksi kimia atau pemeriksaan sintesis. Periksa posisi substitusi, valensi, protonasi, tautomer, stereokimia, dan kewajaran kimia setiap kandidat. Untuk modifikasi yang lebih kompleks, gunakan editor SMILES atau workflow berbasis reaksi RDKit.</p>
+</section>
+
 <div class="layout">
 <div class="stack">
 <section class="card"><h2>01 · Molecule input</h2><label for="smiles">SMILES</label><div class="row"><input id="smiles" value="COc1ccc(cc1)C(=O)O" spellcheck="false" aria-label="Molecule SMILES"><button id="build" class="primary">Build</button></div><div class="chips"><button data-smiles="c1ccccc1">Benzene</button><button data-smiles="COc1ccccc1">Anisole</button><button data-smiles="CC(=O)Oc1ccccc1C(=O)O">Aspirin</button><button data-smiles="NCC(=O)O">Glycine</button><button data-smiles="Cn1c(=O)c2c(ncn2C)n(C)c1=O">Caffeine</button></div><div id="status" class="status">Loading RDKit.js…</div><div id="depiction" class="canvas" aria-label="2D molecular structure"><span class="muted">Molecule depiction appears here.</span></div><div class="metrics" id="quickMetrics"></div><div class="actions"><button id="copySmiles">Copy canonical SMILES</button><button id="downloadCsv">Export descriptors CSV</button><button id="optimize" class="primary">Generate 3D + pre-optimize</button></div></section>
@@ -30,7 +57,7 @@ S(=O)(=O)N</textarea><div class="actions"><button id="enumerate" class="primary"
 <div class="stack">
 <section class="card"><h2>03 · Molecular descriptors</h2><p class="hint">Calculated from the canonicalized input molecule. Values are molecular descriptors, not electronic-structure results.</p><div id="descriptorGrid" class="metrics"><div class="metric"><span>STATUS</span><b>—</b></div></div><div class="actions"><button id="downloadJson">Export descriptor JSON</button></div></section>
 <section class="card"><h2>04 · 3D structure preview</h2><div id="viewer3d" class="viewer"><div class="status">Build a molecule and run 3D pre-optimization.</div></div><p id="optStatus" class="hint">3D conformers are generated and minimized with OpenChemLib/MMFF94 directly in the browser. This is molecular mechanics, not DFT.</p><div class="actions"><button id="downloadXyz">Download XYZ</button><button id="downloadSdf">Download SDF</button></div></section>
-<section class="card"><h2>05 · Online service status</h2><p class="hint">Mode browser-only: seluruh fitur yang didukung berjalan di browser. Tidak ada API server, tidak ada akun, dan tidak ada billing.</p><label for="apiUrl">API endpoint</label><input id="apiUrl" value="" spellcheck="false"><p class="hint">Endpoint standar website. Ubah hanya jika pemilik layanan menerbitkan URL API baru.</p><div class="actions"><button id="checkBackend">Check online API</button></div><div id="backendStatus" class="status">Memeriksa layanan online…</div></section>
+<section class="card"><h2>05 · Local processing status</h2><p class="hint">Pemrosesan struktur dan enumerasi berlangsung di browser. Pencarian PubChem membutuhkan koneksi internet; tidak ada backend berbayar.</p><label for="apiUrl">API endpoint</label><input id="apiUrl" value="" spellcheck="false"><p class="hint">Endpoint standar website. Ubah hanya jika pemilik layanan menerbitkan URL API baru.</p><div class="actions"><button id="checkBackend">Check online API</button></div><div id="backendStatus" class="status">Memeriksa layanan online…</div></section>
 </div>
 </div>
 <p class="footer">Quantum Chemistry Studio · RDKit.js / RDKit Python / 3Dmol.js · Use validated structures and review all generated files before scientific calculations.</p>
