@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Robust macOS launcher for the local Quantum Chemistry Studio website + RDKit API.
-set -uo pipefail
+set -o pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PUBLIC_DIR="$ROOT/public"
