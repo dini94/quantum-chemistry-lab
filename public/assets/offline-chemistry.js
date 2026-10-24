@@ -127,7 +127,10 @@ function make3D() {
 
 function show3D(xyz) {
   if (!window.$3Dmol) throw new Error('3Dmol.js belum termuat. Periksa koneksi internet lalu muat ulang.');
-  if (!viewer) viewer = window.$3Dmol.createViewer($('viewer3d'), { backgroundColor: '#f8faff' });
+  if (!viewer) {
+    $('viewer3d').innerHTML = '';
+    viewer = window.$3Dmol.createViewer($('viewer3d'), { backgroundColor: '#f8faff' });
+  }
   viewer.clear();
   viewer.addModel(xyz, 'xyz');
   viewer.setStyle({}, { stick: { radius: 0.16 }, sphere: { scale: 0.24 } });
@@ -146,9 +149,8 @@ async function optimiseLocal() {
     status('optStatus', 'OpenChemLib · MMFF94 · energi awal ' + fmt(result.before) +
       ' → energi akhir ' + fmt(result.energy) + ' (kcal/mol sesuai konvensi implementasi) · status minimisasi ' +
       result.rc + ' · ' + result.n + ' atom termasuk H. Mekanika molekuler, bukan DFT.', 'ok');
-    download('molecule_3d_mmff94.xyz', lastXYZ);
   } catch (e) {
-    status('optStatus', 'Optimasi lokal gagal: ' + (e.message || e) + '. Tidak ada backend yang digunakan.', 'warn');
+    status('optStatus', '3D gagal dibuat/ditampilkan: ' + (e.message || e) + '. Periksa koneksi CDN dan coba lagi. Tidak ada backend yang digunakan.', 'warn');
   } finally { button.disabled = false; }
 }
 
@@ -297,6 +299,7 @@ async function initOfflineChemistry() {
   dbQuery.addEventListener('keydown', e => { if(e.key==='Enter') searchPubChem(); });
 
     $('build').onclick = buildLocal;
+    $('optimize').onclick = optimiseLocal;
     $('enumerate').onclick = enumerateLocal;
     $('downloadCsv').onclick = () => lastDesc ? download('molecular_descriptors.csv', csv([lastDesc]), 'text/csv') : status('status', 'Build molekul dahulu.', 'warn');
     $('downloadJson').onclick = () => lastDesc ? download('molecular_descriptors.json', JSON.stringify(lastDesc, null, 2), 'application/json') : status('status', 'Build molekul dahulu.', 'warn');
