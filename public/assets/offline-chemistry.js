@@ -235,28 +235,62 @@ async function initOfflineChemistry() {
     status('databaseStatus','Mencari "'+q+'" di PubChem…');
     dbResults.innerHTML = '';
     try {
-      const url = 'https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/' + encodeURIComponent(q) + '/property/IUPACName,CanonicalSMILES,IsomericSMILES,MolecularFormula,MolecularWeight/JSON';
-      let response = await fetch(url);
-      if (!response.ok) throw new Error(response.status===404 ? 'Tidak ada senyawa cocok di PubChem.' : 'PubChem merespons HTTP '+response.status);
-      const data = await response.json();
-      const rows = data.PropertyTable && data.PropertyTable.Properties ? data.PropertyTable.Properties : [];
-      if (!rows.length) throw new Error('PubChem tidak mengembalikan struktur.');
-      dbResults.innerHTML = '<table><thead><tr><th>Nama</th><th>Formula</th><th>SMILES</th><th>Aksi</th></tr></thead><tbody>' + rows.slice(0,20).map((r,i) => {
-        const smi = r.IsomericSMILES || r.CanonicalSMILES || '';
-        return '<tr><td>'+esc(r.IUPACName || q)+'</td><td>'+esc(r.MolecularFormula||'—')+'</td><td><code>'+esc(smi)+'</code></td><td><button type="button" data-use-pubchem="'+i+'">Build</button> <a href="https://pubchem.ncbi.nlm.nih.gov/compound/'+encodeURIComponent(r.CID)+'" target="_blank" rel="noopener">Record ↗</a></td></tr>';
+      // First resolve names to CIDs, then request current PUG REST SMILES property names.
+      const base = 'https://pubchem.ncbi.nlm.nih.gov/rest/pug';
+      const cidResponse = await fetch(base + '/compound/name/' + encodeURIComponent(q) + '/cids/JSON');
+      if (!cidResponse.ok) throw new Error(cidResponse.status===404 ? 'Tidak ada senyawa cocok di PubChem.' : 'Pencarian PubChem gagal (HTTP '+cidResponse.status+').');
+      const cidData = await cidResponse.json();
+      const cids = (cidData.IdentifierList && cidData.IdentifierList.CID || []).slice(0,10);
+      if (!cids.length) throw new Error('PubChem tidak mengembalikan CID untuk pencarian ini.');
+      const fetched = await Promise.all(cids.map(async cid => {
+        const paths = [
+          base + '/compound/cid/' + cid + '/property/IUPACName,MolecularFormula,MolecularWeight,ConnectivitySMILES,SMILES/JSON',
+          base + '/compound/cid/' + cid + '/property/IUPACName,MolecularFormula,MolecularWeight,CanonicalSMILES,IsomericSMILES/JSON'
+        ];
+        for (const url of paths) {
+          try {
+            const response = await fetch(url);
+            if (!response.ok) continue;
+            const data = await response.json();
+            const row = data.PropertyTable && data.PropertyTable.Properties && data.PropertyTable.Properties[0];
+            if (row) return {...row, CID: row.CID || cid};
+          } catch (_) {}
+        }
+        return {CID:cid, IUPACName:'PubChem CID '+cid, MolecularFormula:'—', MolecularWeight:null, SMILES:''};
+      }));
+      const rows = fetched;
+      window.__qcsPubChemRows = rows;
+      dbResults.innerHTML = '<table><thead><tr><th>Nama</th><th>Formula</th><th>SMILES</th><th>Aksi</th></tr></thead><tbody>' + rows.map((r,i) => {
+        const smi = r.SMILES || r.ConnectivitySMILES || r.IsomericSMILES || r.CanonicalSMILES || '';
+        return '<tr><td>'+esc(r.IUPACName || ('PubChem CID '+r.CID))+'</td><td>'+esc(r.MolecularFormula||'—')+'</td><td><code>'+esc(smi || 'SMILES tidak tersedia dari endpoint')+'</code></td><td>'+(smi ? '<button type="button" data-use-pubchem="'+i+'">Build</button>' : '<button type="button" data-retry-pubchem="'+i+'">Retry SMILES</button>')+' <a href="https://pubchem.ncbi.nlm.nih.gov/compound/'+encodeURIComponent(r.CID)+'" target="_blank" rel="noopener">Record ↗</a></td></tr>';
       }).join('') + '</tbody></table>';
-      window.__qcsPubChemRows = rows.slice(0,20);
       dbResults.querySelectorAll('[data-use-pubchem]').forEach(b => b.addEventListener('click', () => {
         const r = window.__qcsPubChemRows[Number(b.dataset.usePubchem)];
-        const smi = r && (r.IsomericSMILES || r.CanonicalSMILES);
-        if (!smi) { status('databaseStatus','Record ini tidak memiliki SMILES pada respons API.','warn'); return; }
+        const smi = r && (r.SMILES || r.ConnectivitySMILES || r.IsomericSMILES || r.CanonicalSMILES);
+        if (!smi) { status('databaseStatus','SMILES belum tersedia. Klik Retry SMILES atau buka record PubChem.','warn'); return; }
         $('smiles').value = smi;
         buildLocal();
         document.getElementById('smiles').scrollIntoView({behavior:'smooth',block:'center'});
       }));
-      status('databaseStatus','Ditemukan '+rows.length+' hasil PubChem. Pilih Build untuk memvalidasi SMILES dengan RDKit.js.','ok');
+      dbResults.querySelectorAll('[data-retry-pubchem]').forEach(b => b.addEventListener('click', async () => {
+        const r = window.__qcsPubChemRows[Number(b.dataset.retryPubchem)];
+        try {
+          const response = await fetch(base+'/compound/cid/'+r.CID+'/property/ConnectivitySMILES,SMILES/JSON');
+          if (!response.ok) throw new Error('HTTP '+response.status);
+          const data = await response.json();
+          const p = data.PropertyTable.Properties[0];
+          const smi = p.SMILES || p.ConnectivitySMILES;
+          if (!smi) throw new Error('SMILES tidak dikembalikan API.');
+          $('smiles').value = smi; buildLocal();
+          document.getElementById('smiles').scrollIntoView({behavior:'smooth',block:'center'});
+          status('databaseStatus','SMILES berhasil diambil untuk CID '+r.CID+'.','ok');
+        } catch(e) {
+          status('databaseStatus','Gagal mengambil SMILES untuk CID '+r.CID+': '+(e.message||e)+'. Buka record PubChem dan salin Canonical SMILES secara manual.','warn');
+        }
+      }));
+      status('databaseStatus','PubChem mengembalikan '+rows.length+' kandidat. Klik Build untuk memvalidasi struktur dengan RDKit.js.','ok');
     } catch (e) {
-      status('databaseStatus',(e.message||String(e))+' Jika nama tidak dikenali, cari melalui tautan PubChem lalu gunakan SMILES rekamannya.','warn');
+      status('databaseStatus',(e.message||String(e))+' Coba nama lain atau cari di PubChem melalui tautan eksternal.','warn');
     } finally { btn.disabled = false; }
   }
   $('searchDatabase').addEventListener('click', searchPubChem);
