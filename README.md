@@ -28,7 +28,7 @@ The web app's SMILES 2D depiction uses the RDKit.js CDN and the 3D preview uses 
 
 ## Enable real 3D pre-optimization locally (Mac/Linux)
 
-Requires Python 3.11 and conda/mamba or another Python environment manager. From the extracted project folder:
+Requires macOS and a Python/Conda environment with RDKit. The launcher finds an interpreter that can import RDKit, installs missing FastAPI/Uvicorn/ASE dependencies into that same environment, verifies both services with HTTP health checks, and prints log locations if startup fails. From the repository root (the folder containing `start-local-mac.sh`):
 
 ```bash
 conda create -n qcs-builder -c conda-forge python=3.11 rdkit ase fastapi uvicorn
@@ -56,7 +56,7 @@ The **Generate 3D + pre-optimize** and **Enumerate candidates** actions require 
    python -m pip install -r backend/requirements.txt
    ```
 
-The launcher starts the website on port 8000 and the API on port 8765. If either port is already in use, stop the old server or change the ports consistently in the script, API URL field, and instructions. Open the `http://localhost:8000` page—not the GitHub Pages URL—for local API functions.
+The launcher does not open the browser until both the website and API pass a real HTTP health check. If startup fails, it prints the last log lines and stores full logs under `/tmp/quantum-chemistry-studio/`. If either port is already in use, it stops with a clear message rather than silently connecting to another process. Alternative ports are supported with `QCS_API_PORT=8766 QCS_WEB_PORT=8001 bash start-local-mac.sh`; in that case set the page's API URL to `http://127.0.0.1:8766` and open `http://localhost:8001/rdkit-workbench.html`. Open the local page—not GitHub Pages—for local API functions.
 
 ## Current limitations (important)
 
