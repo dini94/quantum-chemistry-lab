@@ -26,18 +26,15 @@ A modular web prototype for molecular structure preparation and generating/editi
 
 The web app's SMILES 2D depiction uses the RDKit.js CDN and the 3D preview uses 3Dmol.js CDN. A network connection is needed for those libraries.
 
-## Enable real 3D pre-optimization locally (Mac/Linux)
+The frontend is hosted on GitHub Pages and the Python RDKit/ASE API is deployed separately on Render. The repository includes `render.yaml` for a one-time browser-based deployment.
 
-Requires macOS and a Python/Conda environment with RDKit. The launcher finds an interpreter that can import RDKit, installs missing FastAPI/Uvicorn/ASE dependencies into that same environment, verifies both services with HTTP health checks, and prints log locations if startup fails. From the repository root (the folder containing `start-local-mac.sh`):
+1. Open [Render](https://render.com/) and sign in with GitHub.
+2. Choose **New → Blueprint**, connect `dini94/quantum-chemistry-lab`, and select `main` after this change is merged.
+3. Review the service `quantum-chemistry-lab-api` and approve creation. Render builds from `backend/`, installs `backend/requirements.txt`, and starts FastAPI automatically.
+4. Wait for `/api/health` to pass. The default API URL is `https://quantum-chemistry-lab-api.onrender.com`. If Render assigns another URL, update the endpoint in `public/rdkit-workbench.html` and `BACKEND` in `public/assets/app.js`.
+5. GitHub Pages publishes the frontend automatically. Visitors use the website in a browser; no local Python or Terminal is required.
 
-```bash
-conda create -n qcs-builder -c conda-forge python=3.11 rdkit ase fastapi uvicorn
-conda activate qcs-builder
-cd backend
-uvicorn app:app --host 127.0.0.1 --port 8765
-```
-
-Keep the terminal running. Then open the deployed page. Some browsers may restrict a hosted HTTPS page from connecting to a loopback HTTP service; if so, serve the page locally (for example, `python -m http.server 8000` from `public/`) or use the API directly. Local backend only performs RDKit molecular mechanics and structure export; it does not execute Gaussian or ORCA.
+**Hosting note:** Render's free web service may sleep after 15 minutes without traffic and can take around a minute to wake up. This is suitable for an initial public prototype, not a production SLA. See [Render's official limitations](https://render.com/docs/free). The API endpoints are publicly callable; CORS is not authentication. Gaussian 16 and ORCA are not run by this API; the website only generates input files for those licensed programs.
 
 ## Fix RDKit local backend errors (Mac)
 
@@ -66,7 +63,7 @@ The launcher does not open the browser until both the website and API pass a rea
 - DOCKER in the ORCA builder means ORCA's host–guest docking algorithm. It is not a Docker container launcher.
 - For Gaussian/ORCA input, the default coordinates are a sample water geometry until you load or generate your own structure. Verify charge, multiplicity, geometry, basis sets, method support and resource settings before submitting a calculation.
 - RDKit MMFF94/UFF is molecular mechanics, not DFT. A padded P1 CIF is a convenient coordinate container, not a predicted crystal structure.
-- The current backend has permissive CORS for local prototyping. Do not expose it to the public internet without authentication, restricted origins, and a security review.
+- The public API restricts browser CORS to the GitHub Pages origin and local development origins. CORS is not authentication: add rate limiting and abuse monitoring before promoting it as a production service.
 
 ## Planned next increments
 

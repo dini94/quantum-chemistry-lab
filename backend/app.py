@@ -1,11 +1,10 @@
-"""Optional local RDKit + ASE service for Quantum Chemistry Lab Module 01.
-Run: uvicorn app:app --host 127.0.0.1 --port 8765
-"""
+"""Public RDKit + ASE API for Quantum Chemistry Lab, deployable on Render."""
 from __future__ import annotations
 from io import BytesIO
 from pathlib import Path
 import tempfile, zipfile
 from typing import Literal
+import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -14,8 +13,10 @@ from rdkit.Chem import AllChem, rdMolDescriptors
 from ase import Atoms
 from ase.io import write
 
-app = FastAPI(title="Quantum Chemistry Lab Local RDKit/ASE", version="0.1.0")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=False, allow_methods=["*"], allow_headers=["*"])
+app = FastAPI(title="Quantum Chemistry Lab RDKit/ASE API", version="0.2.0")
+_default_origins = "https://dini94.github.io,http://localhost:8000,http://127.0.0.1:8000"
+_allowed_origins = [origin.strip().rstrip("/") for origin in os.getenv("ALLOWED_ORIGINS", _default_origins).split(",") if origin.strip()]
+app.add_middleware(CORSMiddleware, allow_origins=_allowed_origins, allow_credentials=False, allow_methods=["GET", "POST", "OPTIONS"], allow_headers=["Content-Type"])
 class BuildRequest(BaseModel):
     smiles: str = Field(min_length=1, max_length=5000)
     force_field: Literal["MMFF94", "UFF"] = "MMFF94"
@@ -56,7 +57,7 @@ def build(req: BuildRequest):
     return {"mol": mol, "symbols": symbols, "coords": coords, "xyz": xyz, "formula": rdMolDescriptors.CalcMolFormula(mol), "atom_count": len(symbols), "force_field": ff_name, "energy_before_kcal_mol": e0, "energy_kcal_mol": energy, "optimizer_status": int(opt_status), "smiles": Chem.MolToSmiles(Chem.RemoveHs(mol))}
 
 @app.get("/api/health")
-def health(): return {"ok": True, "service": "RDKit + ASE", "rdkit": Chem.rdBase.rdkitVersion}
+def health(): return {"ok": True, "service": "Quantum Chemistry Lab RDKit + ASE API", "rdkit": Chem.rdBase.rdkitVersion}
 
 @app.post("/api/optimize")
 def optimize(req: BuildRequest):
