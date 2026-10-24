@@ -37,9 +37,10 @@ function localDescriptors(smiles) {
   const d = JSON.parse(mol.get_descriptors());
   let formula = 'Unavailable (OpenChemLib not loaded)';
   let charge = null;
+  let oclMol = null;
   if (OCL) {
     try {
-      const oclMol = OCL.Molecule.fromSmiles(smiles);
+      oclMol = OCL.Molecule.fromSmiles(smiles);
       formula = oclMol.getMolecularFormula().formula;
       charge = Array.from({length: oclMol.getAllAtoms()}, (_, i) => oclMol.getAtomCharge(i)).reduce((a, b) => a + b, 0);
     } catch (_) { /* RDKit depiction and descriptors remain usable independently. */ }
@@ -49,7 +50,7 @@ function localDescriptors(smiles) {
     formula,
     atom_count: mol.get_num_atoms(),
     formal_charge: charge,
-    molecular_weight: d.amw ?? d.MolWt ?? oclMol.getMolweight(),
+    molecular_weight: d.amw ?? d.MolWt ?? (oclMol ? oclMol.getMolweight() : null),
     exact_mass: d.exactmw,
     logp: d.CrippenClogP ?? d.MolLogP,
     tpsa: d.tpsa ?? d.TPSA,
@@ -224,6 +225,43 @@ async function initOfflineChemistry() {
   try {
     await ensureRDKitScript();
     rdkit = await window.initRDKitModule();
+
+  // PubChem PUG REST search: results are fetched on demand, no local database dump.
+  const dbQuery = $('databaseQuery'), dbStatus = $('databaseStatus'), dbResults = $('databaseResults');
+  async function searchPubChem() {
+    const q = dbQuery.value.trim();
+    if (!q) { status('databaseStatus','Masukkan nama senyawa atau kata kunci.','warn'); return; }
+    const btn = $('searchDatabase'); btn.disabled = true;
+    status('databaseStatus','Mencari "'+q+'" di PubChem…');
+    dbResults.innerHTML = '';
+    try {
+      const url = 'https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/' + encodeURIComponent(q) + '/property/Title,CanonicalSMILES,IsomericSMILES,MolecularFormula,MolecularWeight/JSON';
+      let response = await fetch(url);
+      if (!response.ok) throw new Error(response.status===404 ? 'Tidak ada senyawa cocok di PubChem.' : 'PubChem merespons HTTP '+response.status);
+      const data = await response.json();
+      const rows = data.PropertyTable && data.PropertyTable.Properties ? data.PropertyTable.Properties : [];
+      if (!rows.length) throw new Error('PubChem tidak mengembalikan struktur.');
+      dbResults.innerHTML = '<table><thead><tr><th>Nama</th><th>Formula</th><th>SMILES</th><th>Aksi</th></tr></thead><tbody>' + rows.slice(0,20).map((r,i) => {
+        const smi = r.IsomericSMILES || r.CanonicalSMILES || '';
+        return '<tr><td>'+esc(r.Title || q)+'</td><td>'+esc(r.MolecularFormula||'—')+'</td><td><code>'+esc(smi)+'</code></td><td><button type="button" data-use-pubchem="'+i+'">Build</button> <a href="https://pubchem.ncbi.nlm.nih.gov/compound/'+encodeURIComponent(r.CID)+'" target="_blank" rel="noopener">Record ↗</a></td></tr>';
+      }).join('') + '</tbody></table>';
+      window.__qcsPubChemRows = rows.slice(0,20);
+      dbResults.querySelectorAll('[data-use-pubchem]').forEach(b => b.addEventListener('click', () => {
+        const r = window.__qcsPubChemRows[Number(b.dataset.usePubchem)];
+        const smi = r && (r.IsomericSMILES || r.CanonicalSMILES);
+        if (!smi) { status('databaseStatus','Record ini tidak memiliki SMILES pada respons API.','warn'); return; }
+        $('smiles').value = smi;
+        buildLocal();
+        document.getElementById('smiles').scrollIntoView({behavior:'smooth',block:'center'});
+      }));
+      status('databaseStatus','Ditemukan '+rows.length+' hasil PubChem. Pilih Build untuk memvalidasi SMILES dengan RDKit.js.','ok');
+    } catch (e) {
+      status('databaseStatus',(e.message||String(e))+' Jika nama tidak dikenali, cari melalui tautan PubChem lalu gunakan SMILES rekamannya.','warn');
+    } finally { btn.disabled = false; }
+  }
+  $('searchDatabase').addEventListener('click', searchPubChem);
+  dbQuery.addEventListener('keydown', e => { if(e.key==='Enter') searchPubChem(); });
+
     $('build').onclick = buildLocal;
     $('enumerate').onclick = enumerateLocal;
     $('downloadCsv').onclick = () => lastDesc ? download('molecular_descriptors.csv', csv([lastDesc]), 'text/csv') : status('status', 'Build molekul dahulu.', 'warn');
