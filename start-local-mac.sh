@@ -40,7 +40,7 @@ add_candidate() {
   CANDIDATES+=("$p")
 }
 add_candidate "${PYTHON:-}"
-add_candidate "${CONDA_PREFIX:-}/bin/python"
+if [[ -n "${CONDA_PREFIX:-}" ]]; then add_candidate "$CONDA_PREFIX/bin/python"; fi
 add_candidate "$(command -v python 2>/dev/null || true)"
 add_candidate "$(command -v python3 2>/dev/null || true)"
 CONDA_BASE="$(conda info --base 2>/dev/null || true)"
