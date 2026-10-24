@@ -54,7 +54,7 @@ window.QCSBrowserOptimize = browserOptimize;
 
 async function init() {
   try {
-    await OCL.Resources.registerFromUrl('https://cdn.jsdelivr.net/npm/openchemlib@9.25.1/resources.json');
+    await OCL.Resources.registerFromUrl('https://cdn.jsdelivr.net/npm/openchemlib@9.25.1/dist/resources.json');
     ready = true;
     notify('Browser-only mode ready · RDKit.js + OpenChemLib/MMFF94 · no API server or billing.');
   } catch (error) {
