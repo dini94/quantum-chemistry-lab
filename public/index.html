@@ -392,6 +392,17 @@ S(=O)(=O)N</textarea>
       if(occ.length){const h=occ[occ.length-1];props.push({Property:'HOMO energy',Value:h.ev,Unit:'eV',Orbital:h.index});}
       if(virt.length){const l=virt[0];props.push({Property:'LUMO energy',Value:l.ev,Unit:'eV',Orbital:l.index});}
     }
+    // Gaussian frontier orbitals: collect continuation lines after the final occupied/virtual eigenvalue labels (Hartree).
+    function gaussianEigenvalues(label){
+      const re=new RegExp(label+'\\\\s*--([\\\\s\\\\S]*?)(?=\\\\n\\\\s*(?:Alpha|Beta)\\\\s+(?:occ\\\\.|virt\\\\.)\\\\s+eigenvalues|\\\\n\\\\s*[A-Z][A-Za-z ]{2,}--|$)','gi');
+      const ms=[...text.matchAll(re)];if(!ms.length)return [];
+      return (ms[ms.length-1][1].match(/[-+]?(?:\\\\d+\\\\.?\\\\d*|\\\\.\\\\d+)(?:[EeDd][-+]?\\\\d+)?/g)||[]).map(x=>parseFloat(x.replace(/[Dd]/g,'E')));
+    }
+    if(!orbStarts.length && /Gaussian/i.test(kind)){
+      const occ=gaussianEigenvalues('Alpha\\\\s+occ\\\\.\\\\s+eigenvalues'),virt=gaussianEigenvalues('Alpha\\\\s+virt\\\\.\\\\s+eigenvalues');
+      if(occ.length)props.push({Property:'HOMO energy',Value:occ[occ.length-1]*27.211386,Unit:'eV'});
+      if(virt.length)props.push({Property:'LUMO energy',Value:virt[0]*27.211386,Unit:'eV'});
+    }
     // Common ORCA thermochemistry labels and Gaussian frequency thermochemistry.
     add('Enthalpy (electronic + thermal)',/Total Enthalpy\s+[:=]?\s*(-?[0-9]+\.[0-9]+)/i,'Eh');
     add('Gibbs free energy',/(?:Final Gibbs free energy|Final Gibbs free Energy|G-E\(el\))\s*[:=]?\s*(-?[0-9]+\.[0-9]+)/i,'Eh');
@@ -413,7 +424,7 @@ S(=O)(=O)N</textarea>
     }
     const reactivity=[];
     if(Number.isFinite(hom)&&Number.isFinite(lum)){
-      const hEv=Math.abs(hom)<1.5?hom*27.211386:hom, lEv=Math.abs(lum)<1.5?lum*27.211386:lum;
+      const hProp=props.filter(p=>p.Property==='HOMO energy').slice(-1)[0],lProp=props.filter(p=>p.Property==='LUMO energy').slice(-1)[0];const hEv=hProp?.Unit==='Eh'?hom*27.211386:hom, lEv=lProp?.Unit==='Eh'?lum*27.211386:lum;
       const IP=-hEv,EA=-lEv,hard=(IP-EA)/2,soft=hard!==0?1/hard:null,chi=(IP+EA)/2,mu=-chi,omega=hard!==0?mu*mu/(2*hard):null;
       [['HOMO (eV)',hEv],['LUMO (eV)',lEv],['Gap ΔE (eV)',lEv-hEv],['Estimated IP (eV)',IP],['Estimated EA (eV)',EA],['Electronegativity χ (eV)',chi],['Chemical potential μ (eV)',mu],['Global hardness η (eV)',hard],['Softness S (1/eV)',soft],['Electrophilicity ω (eV)',omega],['Electrodonating power ω− (eV)',null],['Electroaccepting power ω+ (eV)',null]].forEach(([Property,Value])=>reactivity.push({Property,Value:Value===null?'Requires additional quantities':Value===null?null:(Number.isFinite(Value)?Value.toFixed(4):'N/A'),Unit:''}));
     }
