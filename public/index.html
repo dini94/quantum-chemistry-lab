@@ -85,14 +85,14 @@ S(=O)(=O)N</textarea>
     <div class="formgrid">
       <div><label for="orcaMethod">Method</label><select id="orcaMethod"><option value="B3LYP">B3LYP</option><option value="PBE0">PBE0</option><option value="r2SCAN-3c">r2SCAN-3c</option><option value="wB97X-D3">wB97X-D3</option><option value="ωB97X-D4">ωB97X-D4</option><option value="BP86">BP86</option><option value="TPSS">TPSS</option><option value="M06-2X">M06-2X</option><option value="DLPNO-CCSD(T)">DLPNO-CCSD(T)</option><option value="MP2">MP2</option><option value="CCSD">CCSD</option><option value="HF">HF</option></select></div>
       <div><label for="orcaBasis">Basis set</label><select id="orcaBasis"><option>def2-SVP</option><option>def2-TZVP</option><option>def2-TZVPP</option><option>def2-SV(P)</option><option value="">Method default</option><option>def2-QZVP</option><option>ma-def2-SVP</option><option>ma-def2-TZVP</option><option>cc-pVDZ</option><option>cc-pVTZ</option><option>aug-cc-pVDZ</option></select></div>
-      <div><label for="orcaTask">Task</label><select id="orcaTask"><option value="Opt">Geometry optimization</option><option value="SP">Single point</option><option value="Freq">Frequency</option><option value="Opt Freq">Optimization + frequency</option><option value="NEB-TS">Transition-state search (review keywords)</option><option value="NumFreq">Numerical frequency</option><option value="CPCM">Solvation single point (configure below)</option><option value="MDCI">Excited states (configure below)</option></select></div>
+      <div><label for="orcaTask">Task</label><select id="orcaTask"><option value="Opt">Geometry optimization</option><option value="SP">Single point</option><option value="Freq">Frequency</option><option value="Opt Freq">Optimization + frequency</option><option value="NEB-TS">Transition-state search (review keywords)</option><option value="NumFreq">Numerical frequency</option><option value="CPCM">Solvation single point (configure below)</option><option value="MDCI">TD-DFT excited states</option></select></div>
       <div><label for="orcaCharge">Charge</label><input id="orcaCharge" type="number" value="0"></div>
       <div><label for="orcaMult">Multiplicity</label><input id="orcaMult" type="number" min="1" value="1"></div>
       <div><label for="orcaCores">Parallel processes</label><input id="orcaCores" type="number" min="1" value="8"></div>
       <div><label for="orcaMaxcore">Memory per core (MB)</label><input id="orcaMaxcore" type="number" min="100" value="2000"></div>
       <div><label for="orcaSolvent">CPCM solvent (optional)</label><select id="orcaSolvent"><option value="">None</option><option>Water</option><option>Ethanol</option><option>Acetonitrile</option><option>DMSO</option><option>Chloroform</option><option>Toluene</option><option>THF</option></select></div>
       <div><label for="orcaDispersion">Dispersion / SCF options</label><select id="orcaExtra"><option value="">Default</option><option value="D4">D4 dispersion</option><option value="RIJCOSX">RIJCOSX</option><option value="TightSCF">TightSCF</option><option value="VeryTightSCF">VeryTightSCF</option><option value="SlowConv">SlowConv</option><option value="Grid5">Grid5</option></select></div>
-      <div><label for="orcaCharge">Charge (total)</label><input id="orcaCharge" type="number" value="0"></div>
+      <div><label for="orcaNRoots">Excited states (NRoots)</label><input id="orcaNRoots" type="number" min="1" value="10"></div>
     </div>
     <label for="orcaInput">Generated ORCA input</label><textarea id="orcaInput" rows="14" spellcheck="false" placeholder="Generate 3D first, then click Generate input."></textarea>
     <div class="actions"><button id="makeOrca" class="primary">Generate ORCA input</button><button id="downloadOrca">Download .inp</button></div><div id="orcaStatus" class="status">Generate 3D first to create a geometry-based input.</div>
@@ -113,7 +113,7 @@ S(=O)(=O)N</textarea>
       <div><label for="gauSCF">SCF convergence</label><select id="gauSCF"><option value="">Default</option><option>SCF=Tight</option><option>SCF=XQC</option><option>SCF=VeryTight</option><option>SCF=QC</option><option>SCF=NoVarAcc</option></select></div>
       <div><label for="gauDisp">Dispersion / integration grid</label><select id="gauDisp"><option value="">Default</option><option>EmpiricalDispersion=GD3BJ</option><option>Int=UltraFine</option><option>Int=SuperFineGrid</option></select></div>
       <div><label for="gauSolvation">Solvation model</label><select id="gauSolvation"><option value="SCRF=(PCM">PCM</option><option value="SCRF=(SMD">SMD</option></select></div>
-      <div><label for="gauTitle">Calculation title</label><input id="gauTitle" value="Quantum Chemistry Studio calculation"></div>
+      <div><label for="gauNStates">TD-DFT excited states (NStates)</label><input id="gauNStates" type="number" min="1" value="10"></div><div><label for="gauTitle">Calculation title</label><input id="gauTitle" value="Quantum Chemistry Studio calculation"></div>
     </div>
     <label for="gauInput">Generated Gaussian input</label><textarea id="gauInput" rows="14" spellcheck="false" placeholder="Generate 3D first, then click Generate input."></textarea>
     <div class="actions"><button id="makeGaussian" class="primary">Generate Gaussian input</button><button id="downloadGaussian">Download .gjf</button></div><div id="gauStatus" class="status">Generate 3D first to create a geometry-based input.</div>
@@ -142,6 +142,12 @@ S(=O)(=O)N</textarea>
     <section class="card"><h2>Thermodynamics</h2><div id="thermoTable" class="tablewrap"></div><p class="hint">Thermochemical values depend on a frequency calculation, temperature, pressure, solvent/model chemistry and standard-state corrections.</p></section>
     <section class="card wide"><h2>Structural parameters</h2><p class="hint">Bond connectivity is estimated from covalent radii; verify unusual bonds, coordination complexes, and transition-metal structures.</p><div id="geometryDescriptors" class="metrics"></div><div id="structureTable" class="tablewrap"></div></section>
     <section class="card"><h2>Optical / excited states</h2><div id="spectrumChart"></div><div id="excitedTable" class="tablewrap"></div></section>
+    <section class="card wide"><h2>ORCA .gbw → HOMO/LUMO cube</h2>
+      <p class="hint">File .gbw menyimpan orbital, tetapi browser statis tidak dapat menjalankan <code>orca_plot</code>. Jalankan konversi di komputer/HPC tempat ORCA terpasang, lalu unggah file cube yang dihasilkan ke viewer di bawah.</p>
+      <div class="formgrid"><div><label for="gbwName">Nama file GBW (opsional, untuk instruksi)</label><input id="gbwName" value="job.gbw"></div><div><label for="gbwOrbital">Nomor orbital HOMO/LUMO</label><input id="gbwOrbital" placeholder="contoh: HOMO 20, LUMO 21"></div></div>
+      <div class="actions"><button id="downloadGbwGuide" type="button">Download panduan HOMO/LUMO (.txt)</button></div>
+      <div id="gbwStatus" class="status">ORCA output menunjukkan nomor orbital; gunakan nomor tersebut di orca_plot. File .gbw tidak dikonversi di browser.</div>
+    </section>
     <section class="card wide"><h2>Orbital / ESP cube viewer</h2><div id="cubeStatus" class="status">Upload a cube file to render a 3D isosurface.</div><div id="cubeViewer" class="viewer" style="height:420px;min-height:320px;position:relative"></div><p class="hint">For orbital cubes, both positive and negative phases are displayed in contrasting colors. ESP cubes need a matching electron-density surface to produce a molecular ESP map; a single ESP cube alone is not a complete mapped surface.</p></section>
     <section class="card wide"><h2>Multiwfn workflow assistant</h2>
       <p class="hint">Multiwfn is an external scientific executable and cannot run inside static GitHub Pages. This panel prepares a workflow for local/HPC use and can display a text report generated by Multiwfn; it does not pretend to run Multiwfn in the browser.</p>
@@ -231,23 +237,27 @@ S(=O)(=O)N</textarea>
     const g=getGeom(),method=$('orcaMethod').value,basis=$('orcaBasis').value,task=$('orcaTask').value;
     const charge=Number($('orcaCharge').value),mult=Math.max(1,Number($('orcaMult').value)||1);
     const cores=Math.max(1,Number($('orcaCores').value)||1), maxcore=Math.max(100,Number($('orcaMaxcore').value)||2000);
-    const extra=$('orcaExtra').value, solvent=$('orcaSolvent').value;
-    const route='! '+[method,basis,task,extra].filter(Boolean).join(' ');
-    const blocks=['%pal nprocs '+cores+' end','%maxcore '+maxcore];
+    const extra=$('orcaExtra').value, solvent=$('orcaSolvent').value, nroots=Math.max(1,Number($('orcaNRoots')?.value)||10);
+    const routeTask=task==='CPCM'?'SP':task==='MDCI'?'TDDFT':task==='NumFreq'?'NumFreq':task;
+    const route='! '+[method,basis,routeTask,extra].filter(Boolean).join(' ');
+    const blocks=['%pal\n  nprocs '+cores+'\nend','%maxcore '+maxcore];
     if(solvent) blocks.push('%cpcm\n  smd true\n  SMDsolvent "'+solvent+'"\nend');
+    if(task==='MDCI') blocks.push('%tddft\n  nroots '+nroots+'\nend');
     $('orcaInput').value=route+'\n'+blocks.join('\n')+'\n\n* xyz '+charge+' '+mult+'\n'+g.atoms+'\n*\n';
     $('orcaStatus').className='status ok';
-    $('orcaStatus').textContent=lang==='id'?'Input ORCA diperbarui otomatis dari geometri 3D. Periksa opsi sebelum menjalankan.':'ORCA input was generated from the 3D geometry. Review options before running.';
+    $('orcaStatus').textContent=lang==='id'?'Input ORCA diperbarui. Jenis job dan blok parameter sudah disesuaikan; periksa kecocokan metode sebelum dijalankan.':'ORCA input updated with task-specific keywords and blocks. Review method/task compatibility before running.';
   }
   function makeGaussian(){
     const g=getGeom(),method=$('gauMethod').value,basis=$('gauBasis').value,task=$('gauTask').value;
     const charge=Number($('gauCharge').value),mult=Math.max(1,Number($('gauMult').value)||1);
     const mem=$('gauMem').value.trim()||'4GB',cores=Math.max(1,Number($('gauCores').value)||1);
-    const route=[method+'/'+basis,task,$('gauSCF').value,$('gauDisp').value].filter(Boolean);
+    const nstates=Math.max(1,Number($('gauNStates')?.value)||10);
+    const taskRoute=task==='TD(NStates=10)'?'TD(NStates='+nstates+')':task;
+    const route=[method+'/'+basis,taskRoute,$('gauSCF').value,$('gauDisp').value].filter(Boolean);
     if($('gauSolvent').value) route.push($('gauSolvation').value+','+$('gauSolvent').value+'))');
     $('gauInput').value='%chk='+safeName()+'.chk\n%mem='+mem+'\n%nprocshared='+cores+'\n#p '+route.join(' ')+'\n\n'+($('gauTitle').value||'Quantum Chemistry Studio calculation')+'\n\n'+charge+' '+mult+'\n'+g.atoms+'\n\n';
     $('gauStatus').className='status ok';
-    $('gauStatus').textContent=lang==='id'?'Input Gaussian diperbarui otomatis dari geometri 3D. Periksa opsi sebelum menjalankan.':'Gaussian input was generated from the 3D geometry. Review options before running.';
+    $('gauStatus').textContent=lang==='id'?'Input Gaussian diperbarui sesuai jenis job. Periksa opsi sebelum dijalankan.':'Gaussian input updated for the selected job. Review options before running.';
   }
   function downloadText(filename,text){
     if(!text.trim()) throw Error('Generate input dahulu.');
@@ -255,6 +265,15 @@ S(=O)(=O)N</textarea>
   }
   $('makeOrca').addEventListener('click',()=>{try{makeOrca()}catch(e){$('orcaStatus').className='status warn';$('orcaStatus').textContent=e.message}});
   $('makeGaussian').addEventListener('click',()=>{try{makeGaussian()}catch(e){$('gauStatus').className='status warn';$('gauStatus').textContent=e.message}});
+  // Regenerate the preview immediately whenever any builder option changes.
+  ['orcaMethod','orcaBasis','orcaTask','orcaCharge','orcaMult','orcaCores','orcaMaxcore','orcaSolvent','orcaExtra','orcaNRoots'].forEach(id=>$(id)?.addEventListener('change',()=>{if(has3DGeometry())try{makeOrca()}catch(e){$('orcaStatus').textContent=e.message}}));
+  ['gauMethod','gauBasis','gauTask','gauCharge','gauMult','gauMem','gauCores','gauSolvent','gauSCF','gauDisp','gauSolvation','gauTitle','gauNStates'].forEach(id=>$(id)?.addEventListener('change',()=>{if(has3DGeometry())try{makeGaussian()}catch(e){$('gauStatus').textContent=e.message}}));
+  $('downloadGbwGuide')?.addEventListener('click',()=>{
+    const base=($('gbwName')?.value||'job.gbw').trim(), stem=base.replace(/\\.gbw$/i,'')||'job';
+    const orb=($('gbwOrbital')?.value||'').trim();
+    const guide='ORCA GBW → HOMO/LUMO CUBE WORKFLOW\\n\\n1. Keep '+base+' and the matching '+stem+'.out from the same calculation.\\n2. In '+stem+'.out, find ORBITAL ENERGIES. Record the last occupied MO index (HOMO) and first unoccupied MO index (LUMO). For open-shell systems, identify alpha/beta spin channel separately.\\n3. In the directory containing the GBW file, run: orca_plot '+base+' -i\\n4. Select molecular orbitals, set the MO number to the HOMO index, operator 0 for alpha (1 for beta if needed), set grid resolution (e.g. 70–90), select Gaussian cube format, and generate the plot. Repeat for LUMO.\\n5. Upload the resulting .cube file in the Orbital / ESP cube viewer. Enable both positive and negative phases in the viewer; this website displays them blue/red.\\n\\nOrbital indices supplied by user: '+(orb||'(fill from matching .out)')+'\\n\\nImportant: the .gbw binary contains orbital coefficients but is not itself a cube image. This GitHub Pages site cannot run the local ORCA executable, so conversion must be performed on your computer/HPC. Confirm the menu prompts against your ORCA version.';
+    downloadText(stem+'_HOMO_LUMO_cube_guide.txt',guide);
+  });
   $('downloadOrca').addEventListener('click',()=>{try{downloadText(safeName()+'.inp',$('orcaInput').value)}catch(e){$('orcaStatus').className='status warn';$('orcaStatus').textContent=e.message}});
   $('downloadGaussian').addEventListener('click',()=>{try{downloadText(safeName()+'.gjf',$('gauInput').value)}catch(e){$('gauStatus').className='status warn';$('gauStatus').textContent=e.message}});
   let analysisReport={};
