@@ -128,7 +128,11 @@ S(=O)(=O)N</textarea>
       <div><label for="analysisXYZ">Final geometry (optional XYZ)</label><input id="analysisXYZ" type="file" accept=".xyz,.gjf,.com,.inp"></div>
       <div><label for="analysisCube">Orbital / ESP cube (optional)</label><input id="analysisCube" type="file" accept=".cube,.cub"></div>
       <div><label for="analysisKind">Output program</label><select id="analysisKind"><option value="auto">Auto-detect</option><option value="orca">ORCA</option><option value="gaussian">Gaussian</option></select></div>
+      <div><label for="fragmentA">Fragment A atom indices (e.g. 1-6,9)</label><input id="fragmentA" placeholder="1-6,9"></div>
+      <div><label for="fragmentB">Fragment B atom indices (e.g. 10-15)</label><input id="fragmentB" placeholder="10-15"></div>
+      <div><label for="cubeIso">Cube isovalue (absolute)</label><input id="cubeIso" type="number" min="0.001" max="1" step="0.005" value="0.03"></div>
     </div>
+    <p class="hint">HOMO/LUMO 3D surfaces need orbital coefficients, not just the printed energy values. For ORCA, use the matching .gbw with orca_plot to export HOMO/LUMO cube files, then upload one here. Gaussian needs a checkpoint/fchk workflow or pre-generated cube.</p>
     <div class="actions"><button id="runAnalysis" class="primary">Analyze results / Analisis hasil</button><button id="downloadAnalysisJSON">Download report JSON</button><button id="downloadAllCSV">Download tables CSV</button></div>
     <div id="analysisStatus" class="status">Belum ada file yang dianalisis.</div>
   </section>
@@ -138,7 +142,7 @@ S(=O)(=O)N</textarea>
     <section class="card"><h2>Thermodynamics</h2><div id="thermoTable" class="tablewrap"></div><p class="hint">Thermochemical values depend on a frequency calculation, temperature, pressure, solvent/model chemistry and standard-state corrections.</p></section>
     <section class="card wide"><h2>Structural parameters</h2><p class="hint">Bond connectivity is estimated from covalent radii; verify unusual bonds, coordination complexes, and transition-metal structures.</p><div id="geometryDescriptors" class="metrics"></div><div id="structureTable" class="tablewrap"></div></section>
     <section class="card"><h2>Optical / excited states</h2><div id="spectrumChart"></div><div id="excitedTable" class="tablewrap"></div></section>
-    <section class="card"><h2>Orbital / ESP cube file</h2><div id="cubeStatus" class="status">Cube visualization requires a cube file from ORCA or Gaussian.</div><div id="cubeViewer" class="viewer"></div></section>
+    <section class="card wide"><h2>Orbital / ESP cube viewer</h2><div id="cubeStatus" class="status">Upload a cube file to render a 3D isosurface.</div><div id="cubeViewer" class="viewer" style="height:420px;min-height:320px;position:relative"></div><p class="hint">For orbital cubes, both positive and negative phases are displayed in contrasting colors. ESP cubes need a matching electron-density surface to produce a molecular ESP map; a single ESP cube alone is not a complete mapped surface.</p></section>
     <section class="card wide"><h2>Publication exports</h2><p class="hint">Download extracted tables for editing and figure preparation. Results are extracted from the supplied output; unsupported quantities are marked unavailable rather than estimated.</p><div id="exportTable" class="tablewrap"></div></section>
   </div>
 </section>
@@ -311,6 +315,43 @@ S(=O)(=O)N</textarea>
     const nearPlanar=torsionAbs.filter(x=>x<=15).length;
     return {bonds,angles,torsions,geometryDescriptors:{...planarity(atoms),torsionsNearPlanar:nearPlanar,torsionsCount:torsions.length,nearPlanarPercent:torsions.length?100*nearPlanar/torsions.length:null}};
   }
+  function parseIndices(spec,n){
+    const out=new Set();String(spec||'').split(',').map(x=>x.trim()).filter(Boolean).forEach(part=>{
+      const m=part.match(/^(\\d+)\\s*-\\s*(\\d+)$/);if(m){let a=+m[1],b=+m[2];for(let i=Math.min(a,b);i<=Math.max(a,b);i++)if(i>=1&&i<=n)out.add(i-1);}
+      else if(/^\\d+$/.test(part)){const i=+part;if(i>=1&&i<=n)out.add(i-1);}
+    });return [...out].map(i=>i);
+  }
+  function planeFor(atoms){
+    if(atoms.length<3)return null;
+    const c=[0,0,0];atoms.forEach(a=>{c[0]+=a.x/atoms.length;c[1]+=a.y/atoms.length;c[2]+=a.z/atoms.length});
+    const A=[[0,0,0],[0,0,0],[0,0,0]];atoms.forEach(a=>{const v=[a.x-c[0],a.y-c[1],a.z-c[2]];for(let i=0;i<3;i++)for(let j=0;j<3;j++)A[i][j]+=v[i]*v[j]});
+    let V=[[1,0,0],[0,1,0],[0,0,1]];
+    for(let it=0;it<50;it++){let p=0,q=1;if(Math.abs(A[0][2])>Math.abs(A[p][q])){p=0;q=2}if(Math.abs(A[1][2])>Math.abs(A[p][q])){p=1;q=2}if(Math.abs(A[p][q])<1e-12)break;
+      const phi=.5*Math.atan2(2*A[p][q],A[q][q]-A[p][p]),co=Math.cos(phi),si=Math.sin(phi),app=co*co*A[p][p]-2*si*co*A[p][q]+si*si*A[q][q],aqq=si*si*A[p][p]+2*si*co*A[p][q]+co*co*A[q][q];
+      for(let k=0;k<3;k++)if(k!==p&&k!==q){const x=A[k][p],y=A[k][q];A[k][p]=A[p][k]=co*x-si*y;A[k][q]=A[q][k]=si*x+co*y}A[p][p]=app;A[q][q]=aqq;A[p][q]=A[q][p]=0;
+      for(let k=0;k<3;k++){const x=V[k][p],y=V[k][q];V[k][p]=co*x-si*y;V[k][q]=si*x+co*y}
+    }
+    let ix=0;if(A[1][1]<A[ix][ix])ix=1;if(A[2][2]<A[ix][ix])ix=2;let normal=[V[0][ix],V[1][ix],V[2][ix]],norm=Math.hypot(...normal)||1;normal=normal.map(x=>x/norm);
+    const dev=atoms.map(a=>Math.abs((a.x-c[0])*normal[0]+(a.y-c[1])*normal[1]+(a.z-c[2])*normal[2]));
+    return {center:c,normal,rms:Math.sqrt(dev.reduce((a,b)=>a+b*b,0)/dev.length),max:Math.max(...dev)};
+  }
+  function addFragmentDescriptors(report){
+    const atoms=report.geometry||[],ia=parseIndices($('fragmentA')?.value,atoms.length),ib=parseIndices($('fragmentB')?.value,atoms.length),a=planeFor(ia.map(i=>atoms[i])),b=planeFor(ib.map(i=>atoms[i]));
+    report.fragmentDescriptors={fragmentAAtoms:ia.map(i=>i+1),fragmentBAtoms:ib.map(i=>i+1),fragmentA:a,fragmentB:b,interplaneAngle:null};
+    if(a&&b){const d=Math.min(1,Math.abs(a.normal.reduce((z,x,i)=>z+x*b.normal[i],0)));report.fragmentDescriptors.interplaneAngle=Math.acos(d)*180/Math.PI;}
+    return report;
+  }
+  async function renderCube(file,atoms){
+    const host=$('cubeViewer'),status=$('cubeStatus');host.innerHTML='';
+    const txt=await file.text();if(!/^\\s*(?:[^\\n]*\\n){2}/.test(txt)||txt.length<100)throw Error('Cube file does not look valid.');
+    if(!window.$3Dmol){status.textContent='3Dmol.js is not loaded. Refresh the page and try again.';return;}
+    const viewer=window.$3Dmol.createViewer(host,{backgroundColor:'white'});
+    if(atoms?.length){const xyz=atoms.length+'\\nGeometry from output\\n'+atoms.map(a=>a.el+' '+a.x+' '+a.y+' '+a.z).join('\\n');viewer.addModel(xyz,'xyz');viewer.setStyle({stick:{radius:.13},sphere:{scale:.22}});}
+    const iso=Math.max(.001,Math.min(1,Number($('cubeIso').value)||.03));
+    viewer.addVolumetricData(txt,'cube',{isoval:iso,color:'blue',opacity:.78});
+    viewer.addVolumetricData(txt,'cube',{isoval:-iso,color:'red',opacity:.78});
+    viewer.zoomTo();viewer.render();status.className='status ok';status.textContent='Cube loaded: '+file.name+' · ±'+iso+' a.u. (blue/red phases).';
+  }
   function parseAnalysis(text){
     const kind=$('analysisKind').value==='auto'?( /ORCA/i.test(text)?'ORCA':'Gaussian / unknown'):$('analysisKind').value.toUpperCase();
     const pick=(label,re,unit='')=>{const v=lastMatch(text,re);return v===undefined?null:{Property:label,Value:v,Unit:unit};};
@@ -367,7 +408,7 @@ S(=O)(=O)N</textarea>
       [['HOMO (eV)',hEv],['LUMO (eV)',lEv],['Gap ΔE (eV)',lEv-hEv],['Estimated IP (eV)',IP],['Estimated EA (eV)',EA],['Electronegativity χ (eV)',chi],['Chemical potential μ (eV)',mu],['Global hardness η (eV)',hard],['Softness S (1/eV)',soft],['Electrophilicity ω (eV)',omega],['Electrodonating power ω− (eV)',null],['Electroaccepting power ω+ (eV)',null]].forEach(([Property,Value])=>reactivity.push({Property,Value:Value===null?'Requires additional quantities':Value===null?null:(Number.isFinite(Value)?Value.toFixed(4):'N/A'),Unit:''}));
     }
     const td=props.filter(p=>/Gibbs|Enthalpy|Zero.point|Thermal correction|energy/i.test(p.Property)&&/Eh/.test(p.Unit));
-    return {program:kind,parsedAt:new Date().toISOString(),summary:{atoms:geom.length,excitedStates:excited.length,bonds:structure.bonds.length,angles:structure.angles.length,dihedrals:structure.torsions.length},electronic:props,reactivity,thermodynamics:td,geometryDescriptors:structure.geometryDescriptors,structure,excitedStates:excited,geometry:geom,notes:['Bond lengths, angles and dihedrals are inferred from final coordinates using covalent-radius cutoffs; inspect chemical connectivity manually.','EA/IP require separate neutral and charged calculations or orbital/vertical-energy data; they are not inferred from HOMO/LUMO alone.','Optical transitions are extracted only when recognized in the supplied output format.','ESP/orbital surfaces require cube files and suitable visualization; cube grids are not converted to quantitative ESP maps by this lightweight parser.']};
+    return addFragmentDescriptors({program:kind,parsedAt:new Date().toISOString(),summary:{atoms:geom.length,excitedStates:excited.length,bonds:structure.bonds.length,angles:structure.angles.length,dihedrals:structure.torsions.length},electronic:props,reactivity,thermodynamics:td,geometryDescriptors:structure.geometryDescriptors,structure,excitedStates:excited,geometry:geom,notes:['Bond lengths, angles and dihedrals are inferred from final coordinates using covalent-radius cutoffs; inspect chemical connectivity manually.','Planarity and fragment coplanarity are geometric descriptors; they do not alone prove electronic conjugation.','Frontier-orbital-derived IP/EA are estimates; ΔSCF calculations are recommended for quantitative values.','Optical transitions are extracted only when recognized in the supplied output format.','ESP/orbital surfaces require appropriate cube data and matched grid information.']});
   }
   function renderAnalysis(report){
     const s=report.summary;
@@ -376,6 +417,8 @@ S(=O)(=O)N</textarea>
     $('reactivityTable').innerHTML=tableHTML(report.reactivity||[],[{key:'Property',label:'Descriptor'},{key:'Value',label:'Value'},{key:'Unit',label:'Unit'}]);
     $('thermoTable').innerHTML=tableHTML(report.thermodynamics||[],[{key:'Property',label:'Quantity'},{key:'Value',label:'Value'},{key:'Unit',label:'Unit'}]);
     const gd=report.geometryDescriptors||{};$('geometryDescriptors').innerHTML=[['Best-fit plane RMS deviation (Å)',gd.rms],['Maximum deviation from plane (Å)',gd.max],['Atoms within 0.10 Å of plane (%)',gd.planarFraction],['Near-planar dihedrals ≤15° or ≥165° (%)',gd.nearPlanarPercent]].map(([k,v])=>'<div class="metric"><span>'+escHTML(k)+'</span><b>'+(Number.isFinite(+v)?(+v).toFixed(3):'N/A')+'</b></div>').join('');
+    const fd=report.fragmentDescriptors||{};const fmetrics=[['Fragment A atoms',fd.fragmentAAtoms?.join(', ')||'Not set'],['Fragment A plane RMS (Å)',fd.fragmentA?.rms],['Fragment B atoms',fd.fragmentBAtoms?.join(', ')||'Not set'],['Fragment B plane RMS (Å)',fd.fragmentB?.rms],['Inter-fragment plane angle (°)',fd.interplaneAngle]];
+    $('geometryDescriptors').innerHTML += fmetrics.map(([k,v])=>'<div class="metric"><span>'+escHTML(k)+'</span><b>'+(typeof v==='number'&&Number.isFinite(v)?v.toFixed(3):(v??'N/A'))+'</b></div>').join('');
     $('structureTable').innerHTML='<h3>Bond lengths</h3>'+tableHTML(report.structure.bonds,[{key:'Atom1',label:'Atom 1'},{key:'Element1',label:'Element'},{key:'Atom2',label:'Atom 2'},{key:'Element2',label:'Element'},{key:'BondLength_A',label:'Length (Å)'}])+'<h3 style="margin-top:16px">Bond angles</h3>'+tableHTML(report.structure.angles,[{key:'Atom1',label:'Atom 1'},{key:'Center',label:'Center'},{key:'Atom3',label:'Atom 3'},{key:'Angle_deg',label:'Angle (°)'}])+'<h3 style="margin-top:16px">Dihedral angles</h3>'+tableHTML(report.structure.torsions,[{key:'Atom1',label:'Atom 1'},{key:'Atom2',label:'Atom 2'},{key:'Atom3',label:'Atom 3'},{key:'Atom4',label:'Atom 4'},{key:'Dihedral_deg',label:'Dihedral (°)'}]);
     $('excitedTable').innerHTML=tableHTML(report.excitedStates,[{key:'State',label:'State'},{key:'Symmetry',label:'Symmetry'},{key:'Energy_eV',label:'Energy (eV)'},{key:'Wavelength_nm',label:'Wavelength (nm)'},{key:'OscillatorStrength',label:'Oscillator strength'}]);
     const es=report.excitedStates.filter(x=>Number.isFinite(x.Wavelength_nm)&&x.Wavelength_nm>0);
@@ -391,7 +434,7 @@ S(=O)(=O)N</textarea>
       if($('analysisXYZ').files[0])window.analysisXYZText=await $('analysisXYZ').files[0].text();
       const text=await file.text();analysisReport=parseAnalysis(text);analysisReport.sourceFile=file.name;renderAnalysis(analysisReport);
       const cube=$('analysisCube').files[0];
-      if(cube){$('cubeStatus').className='status';$('cubeStatus').textContent='Cube file dipilih: '+cube.name+'. Visualisasi isosurface cube penuh belum tersedia di parser ringan ini; file tetap dapat diproses oleh software visualisasi molekul seperti VMD, Avogadro, atau GaussView.';}
+      if(cube)await renderCube(cube,analysisReport.geometry);
     }catch(e){$('analysisStatus').className='status warn';$('analysisStatus').textContent=e.message;}
   });
   $('downloadAnalysisJSON').addEventListener('click',()=>{if(!analysisReport.summary){$('analysisStatus').textContent='Analyze a results file first.';return;}downloadBlob('quantum_chemistry_analysis.json',JSON.stringify(analysisReport,null,2),'application/json');});
