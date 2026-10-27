@@ -134,8 +134,9 @@ S(=O)(=O)N</textarea>
   </section>
   <div class="layout" style="margin-top:16px">
     <section class="card"><h2>Calculation summary</h2><div id="analysisSummary" class="metrics"></div></section>
-    <section class="card"><h2>Electronic properties</h2><div id="electronicTable" class="tablewrap"></div><div id="orbitalDiagram" style="margin-top:12px"></div></section>
-    <section class="card wide"><h2>Structural parameters</h2><p class="hint">Bond connectivity is estimated from covalent radii; verify unusual bonds, coordination complexes, and transition-metal structures.</p><div id="structureTable" class="tablewrap"></div></section>
+    <section class="card"><h2>Electronic properties</h2><div id="electronicTable" class="tablewrap"></div><div id="orbitalDiagram" style="margin-top:12px"></div><h3>Conceptual-DFT descriptors</h3><div id="reactivityTable" class="tablewrap"></div><p class="hint">HOMO/LUMO-derived values are Koopmans-style estimates, not substitutes for ΔSCF ionization energies/electron affinities.</p></section>
+    <section class="card"><h2>Thermodynamics</h2><div id="thermoTable" class="tablewrap"></div><p class="hint">Thermochemical values depend on a frequency calculation, temperature, pressure, solvent/model chemistry and standard-state corrections.</p></section>
+    <section class="card wide"><h2>Structural parameters</h2><p class="hint">Bond connectivity is estimated from covalent radii; verify unusual bonds, coordination complexes, and transition-metal structures.</p><div id="geometryDescriptors" class="metrics"></div><div id="structureTable" class="tablewrap"></div></section>
     <section class="card"><h2>Optical / excited states</h2><div id="spectrumChart"></div><div id="excitedTable" class="tablewrap"></div></section>
     <section class="card"><h2>Orbital / ESP cube file</h2><div id="cubeStatus" class="status">Cube visualization requires a cube file from ORCA or Gaussian.</div><div id="cubeViewer" class="viewer"></div></section>
     <section class="card wide"><h2>Publication exports</h2><p class="hint">Download extracted tables for editing and figure preparation. Results are extracted from the supplied output; unsupported quantities are marked unavailable rather than estimated.</p><div id="exportTable" class="tablewrap"></div></section>
@@ -282,13 +283,33 @@ S(=O)(=O)N</textarea>
     const sub=(a,b)=>a.map((v,i)=>v-b[i]),dot=(a,b)=>a.reduce((s,v,i)=>s+v*b[i],0),cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],norm=a=>{const n=Math.hypot(...a)||1;return a.map(v=>v/n)};
     const xyz=p=>[p.x,p.y,p.z],b0=sub(xyz(p0),xyz(p1)),b1=norm(sub(xyz(p2),xyz(p1))),b2=sub(xyz(p3),xyz(p2)),v=sub(b0,b1.map(x=>x*dot(b0,b1))),w=sub(b2,b1.map(x=>x*dot(b2,b1))),x=dot(v,w),y=dot(cross(b1,v),w);return Math.atan2(y,x)*180/Math.PI;
   }
+  function planarity(atoms){
+    if(atoms.length<3)return {rms: null,max:null,planarFraction:null};
+    const n=atoms.length,c=[0,0,0];atoms.forEach(a=>{c[0]+=a.x/n;c[1]+=a.y/n;c[2]+=a.z/n});
+    const A=[[0,0,0],[0,0,0],[0,0,0]];
+    atoms.forEach(a=>{const v=[a.x-c[0],a.y-c[1],a.z-c[2]];for(let i=0;i<3;i++)for(let j=0;j<3;j++)A[i][j]+=v[i]*v[j];});
+    // Jacobi diagonalization: eigenvector for smallest eigenvalue is the best-fit plane normal.
+    let V=[[1,0,0],[0,1,0],[0,0,1]];
+    for(let it=0;it<40;it++){let p=0,q=1;if(Math.abs(A[0][2])>Math.abs(A[p][q])){p=0;q=2;}if(Math.abs(A[1][2])>Math.abs(A[p][q])){p=1;q=2;}if(Math.abs(A[p][q])<1e-12)break;
+      const phi=.5*Math.atan2(2*A[p][q],A[q][q]-A[p][p]),co=Math.cos(phi),si=Math.sin(phi);
+      const app=co*co*A[p][p]-2*si*co*A[p][q]+si*si*A[q][q],aqq=si*si*A[p][p]+2*si*co*A[p][q]+co*co*A[q][q];
+      for(let k=0;k<3;k++)if(k!==p&&k!==q){const akp=A[k][p],akq=A[k][q];A[k][p]=A[p][k]=co*akp-si*akq;A[k][q]=A[q][k]=si*akp+co*akq;}
+      A[p][p]=app;A[q][q]=aqq;A[p][q]=A[q][p]=0;
+      for(let k=0;k<3;k++){const vp=V[k][p],vq=V[k][q];V[k][p]=co*vp-si*vq;V[k][q]=si*vp+co*vq;}
+    }
+    let idx=0;if(A[1][1]<A[idx][idx])idx=1;if(A[2][2]<A[idx][idx])idx=2;
+    const normal=[V[0][idx],V[1][idx],V[2][idx]],dev=atoms.map(a=>Math.abs((a.x-c[0])*normal[0]+(a.y-c[1])*normal[1]+(a.z-c[2])*normal[2]));
+    return {rms:Math.sqrt(dev.reduce((z,x)=>z+x*x,0)/n),max:Math.max(...dev),planarFraction:dev.filter(x=>x<=0.10).length/n*100};
+  }
   function structural(atoms){
     const bonds=[],angles=[],torsions=[],adj=atoms.map(()=>[]);
     for(let i=0;i<atoms.length;i++)for(let j=i+1;j<atoms.length;j++){const d=dist(atoms[i],atoms[j]),cut=(radii[atoms[i].el]||.8)+(radii[atoms[j].el]||.8)+.18;if(d>.35&&d<cut){bonds.push({Atom1:i+1,Element1:atoms[i].el,Atom2:j+1,Element2:atoms[j].el,BondLength_A:d.toFixed(4)});adj[i].push(j);adj[j].push(i);}}
     for(let j=0;j<atoms.length;j++)for(let x=0;x<adj[j].length;x++)for(let y=x+1;y<adj[j].length;y++){const i=adj[j][x],k=adj[j][y];angles.push({Atom1:i+1,Center:j+1,Atom3:k+1,Angle_deg:angle(atoms[i],atoms[j],atoms[k]).toFixed(2)});}
     const seen=new Set();
     for(let j=0;j<atoms.length;j++)for(let k of adj[j])if(k>j)for(let i of adj[j])if(i!==k)for(let l of adj[k])if(l!==j&&l!==i){const key=[i,j,k,l].join('-'),rev=[l,k,j,i].join('-'),canon=key<rev?key:rev;if(seen.has(canon))continue;seen.add(canon);torsions.push({Atom1:i+1,Atom2:j+1,Atom3:k+1,Atom4:l+1,Dihedral_deg:dihedral(atoms[i],atoms[j],atoms[k],atoms[l]).toFixed(2)});if(torsions.length>15000)return {bonds,angles,torsions};}
-    return {bonds,angles,torsions};
+    const torsionAbs=torsions.map(t=>Math.abs(+t.Dihedral_deg)).map(x=>Math.min(x,180-x));
+    const nearPlanar=torsionAbs.filter(x=>x<=15).length;
+    return {bonds,angles,torsions,geometryDescriptors:{...planarity(atoms),torsionsNearPlanar:nearPlanar,torsionsCount:torsions.length,nearPlanarPercent:torsions.length?100*nearPlanar/torsions.length:null}};
   }
   function parseAnalysis(text){
     const kind=$('analysisKind').value==='auto'?( /ORCA/i.test(text)?'ORCA':'Gaussian / unknown'):$('analysisKind').value.toUpperCase();
@@ -311,31 +332,57 @@ S(=O)(=O)N</textarea>
     add('SCF convergence',/(SCF CONVERGED|SCF Done:)/i,'');
     add('Optimization status',/(THE OPTIMIZATION HAS CONVERGED|OPTIMIZATION CONVERGED|Optimization completed)/i,'');
     add('Normal termination',/(Normal termination of Gaussian|ORCA TERMINATED NORMALLY)/i,'');
+    // ORCA orbital table: use the last ORBITAL ENERGIES block and occupancy to identify frontier orbitals.
+    const orbStarts=[...text.matchAll(/ORBITAL ENERGIES/gi)];
+    if(orbStarts.length){
+      const chunk=text.slice(orbStarts[orbStarts.length-1].index).split(/\\n\\s*\\n\\s*[-]{3,}/)[0];
+      const orbitalRows=[];for(const line of chunk.split(/\\r?\\n/)){const m=line.match(/^\\s*(\\d+)\\s+([0-9.]+)\\s+(-?[0-9.]+)\\s+(-?[0-9.]+)/);if(m)orbitalRows.push({index:+m[1],occ:+m[2],eh:+m[3],ev:+m[4]});}
+      const occ=orbitalRows.filter(o=>o.occ>0.0001),virt=orbitalRows.filter(o=>o.occ<=0.0001);
+      if(occ.length){const h=occ[occ.length-1];props.push({Property:'HOMO energy',Value:h.ev,Unit:'eV',Orbital:h.index});}
+      if(virt.length){const l=virt[0];props.push({Property:'LUMO energy',Value:l.ev,Unit:'eV',Orbital:l.index});}
+    }
+    // Common ORCA thermochemistry labels and Gaussian frequency thermochemistry.
+    add('Enthalpy (electronic + thermal)',/Total Enthalpy\\s+[:=]?\\s*(-?[0-9]+\\.[0-9]+)/i,'Eh');
+    add('Gibbs free energy',/(?:Final Gibbs free energy|Final Gibbs free Energy|G-E\\(el\\))\\s*[:=]?\\s*(-?[0-9]+\\.[0-9]+)/i,'Eh');
+    add('Zero-point energy',/Zero point energy\\s*[:=]?\\s*(-?[0-9]+\\.[0-9]+)/i,'Eh');
+    add('Thermal correction to Enthalpy',/Thermal correction to Enthalpy=\\s*(-?[0-9.]+)/i,'Eh');
+    add('Thermal correction to Internal Energy',/Thermal correction to Energy=\\s*(-?[0-9.]+)/i,'Eh');
+    add('Thermal correction to Entropy',/Thermal correction to Gibbs Free Energy=\\s*(-?[0-9.]+)/i,'Eh');
     const excited=[];
     let m;
     const re1=/Excited State\s+(\d+):\s*([A-Za-z-]+)\s+([\d.]+)\s+eV\s+([\d.]+)\s+nm\s+f=([\d.]+)/g;
     while((m=re1.exec(text))!==null)excited.push({State:m[1],Symmetry:m[2],Energy_eV:+m[3],Wavelength_nm:+m[4],OscillatorStrength:+m[5]});
     const re2=/STATE\s+(\d+)\s*:\s*E= *(-?[\d.]+)\s* au\s*.*?E\(eV\)\s*([\d.]+)\s*.*?nm\s*([\d.]+)/gi;
     while((m=re2.exec(text))!==null)excited.push({State:m[1],Energy_eV:+m[3],Wavelength_nm:+m[4],OscillatorStrength:''});
-    const geom=parseGeometry(text),structure=geom.length?structural(geom):{bonds:[],angles:[],torsions:[]};
+    const geom=parseGeometry(text),structure=geom.length?structural(geom):{bonds:[],angles:[],torsions:[],geometryDescriptors:{rms:null,max:null,planarFraction:null,torsionsNearPlanar:0,torsionsCount:0,nearPlanarPercent:null}};
     const propsMap=Object.fromEntries(props.map(p=>[p.Property,p.Value]));
-    let gap=null;
-    const hom=parseFloat(propsMap['HOMO energy']),lum=parseFloat(propsMap['LUMO energy']);
-    if(Number.isFinite(hom)&&Number.isFinite(lum))gap=(lum-hom)*27.211386;
-    if(gap!==null&&!props.some(p=>p.Property==='HOMO-LUMO gap'))props.push({Property:'HOMO-LUMO gap (derived)',Value:gap.toFixed(4),Unit:'eV'});
-    return {program:kind,parsedAt:new Date().toISOString(),summary:{atoms:geom.length,excitedStates:excited.length,bonds:structure.bonds.length,angles:structure.angles.length,dihedrals:structure.torsions.length},electronic:props,structure,excitedStates:excited,geometry:geom,notes:['Bond lengths, angles and dihedrals are inferred from final coordinates using covalent-radius cutoffs; inspect chemical connectivity manually.','EA/IP require separate neutral and charged calculations or orbital/vertical-energy data; they are not inferred from HOMO/LUMO alone.','Optical transitions are extracted only when recognized in the supplied output format.','ESP/orbital surfaces require cube files and suitable visualization; cube grids are not converted to quantitative ESP maps by this lightweight parser.']};
+    let gap=null;const hom=parseFloat(propsMap['HOMO energy']),lum=parseFloat(propsMap['LUMO energy']);
+    if(Number.isFinite(hom)&&Number.isFinite(lum)){gap=lum-hom;if(Math.abs(hom)<1.5&&Math.abs(lum)<1.5)gap*=27.211386;
+      if(!props.some(p=>/HOMO-LUMO gap/i.test(p.Property)))props.push({Property:'HOMO-LUMO gap (frontier orbitals)',Value:gap.toFixed(4),Unit:'eV'});
+    }
+    const reactivity=[];
+    if(Number.isFinite(hom)&&Number.isFinite(lum)){
+      const hEv=Math.abs(hom)<1.5?hom*27.211386:hom, lEv=Math.abs(lum)<1.5?lum*27.211386:lum;
+      const IP=-hEv,EA=-lEv,hard=(IP-EA)/2,soft=hard!==0?1/(2*hard):null,chi=(IP+EA)/2,mu=-chi,omega=hard!==0?mu*mu/(2*hard):null;
+      [['HOMO (eV)',hEv],['LUMO (eV)',lEv],['Gap ΔE (eV)',lEv-hEv],['Estimated IP (eV)',IP],['Estimated EA (eV)',EA],['Electronegativity χ (eV)',chi],['Chemical potential μ (eV)',mu],['Global hardness η (eV)',hard],['Softness S (1/eV)',soft],['Electrophilicity ω (eV)',omega],['Electrodonating power ω− (eV)',null],['Electroaccepting power ω+ (eV)',null]].forEach(([Property,Value])=>reactivity.push({Property,Value:Value===null?'Requires additional quantities':Value===null?null:(Number.isFinite(Value)?Value.toFixed(4):'N/A'),Unit:''}));
+    }
+    const td=props.filter(p=>/Gibbs|Enthalpy|Zero.point|Thermal correction|energy/i.test(p.Property)&&/Eh/.test(p.Unit));
+    return {program:kind,parsedAt:new Date().toISOString(),summary:{atoms:geom.length,excitedStates:excited.length,bonds:structure.bonds.length,angles:structure.angles.length,dihedrals:structure.torsions.length},electronic:props,reactivity,thermodynamics:td,geometryDescriptors:structure.geometryDescriptors,structure,excitedStates:excited,geometry:geom,notes:['Bond lengths, angles and dihedrals are inferred from final coordinates using covalent-radius cutoffs; inspect chemical connectivity manually.','EA/IP require separate neutral and charged calculations or orbital/vertical-energy data; they are not inferred from HOMO/LUMO alone.','Optical transitions are extracted only when recognized in the supplied output format.','ESP/orbital surfaces require cube files and suitable visualization; cube grids are not converted to quantitative ESP maps by this lightweight parser.']};
   }
   function renderAnalysis(report){
     const s=report.summary;
     $('analysisSummary').innerHTML=[['Program',report.program],['Atoms',s.atoms],['Bonds',s.bonds],['Angles',s.angles],['Dihedrals',s.dihedrals],['Excited states',s.excitedStates]].map(([k,v])=>'<div class="metric"><span>'+escHTML(k)+'</span><b>'+escHTML(v)+'</b></div>').join('');
     $('electronicTable').innerHTML=tableHTML(report.electronic,[{key:'Property',label:'Property'},{key:'Value',label:'Value'},{key:'Unit',label:'Unit'}]);
+    $('reactivityTable').innerHTML=tableHTML(report.reactivity||[],[{key:'Property',label:'Descriptor'},{key:'Value',label:'Value'},{key:'Unit',label:'Unit'}]);
+    $('thermoTable').innerHTML=tableHTML(report.thermodynamics||[],[{key:'Property',label:'Quantity'},{key:'Value',label:'Value'},{key:'Unit',label:'Unit'}]);
+    const gd=report.geometryDescriptors||{};$('geometryDescriptors').innerHTML=[['Best-fit plane RMS deviation (Å)',gd.rms],['Maximum deviation from plane (Å)',gd.max],['Atoms within 0.10 Å of plane (%)',gd.planarFraction],['Near-planar dihedrals ≤15° or ≥165° (%)',gd.nearPlanarPercent]].map(([k,v])=>'<div class="metric"><span>'+escHTML(k)+'</span><b>'+(Number.isFinite(+v)?(+v).toFixed(3):'N/A')+'</b></div>').join('');
     $('structureTable').innerHTML='<h3>Bond lengths</h3>'+tableHTML(report.structure.bonds,[{key:'Atom1',label:'Atom 1'},{key:'Element1',label:'Element'},{key:'Atom2',label:'Atom 2'},{key:'Element2',label:'Element'},{key:'BondLength_A',label:'Length (Å)'}])+'<h3 style="margin-top:16px">Bond angles</h3>'+tableHTML(report.structure.angles,[{key:'Atom1',label:'Atom 1'},{key:'Center',label:'Center'},{key:'Atom3',label:'Atom 3'},{key:'Angle_deg',label:'Angle (°)'}])+'<h3 style="margin-top:16px">Dihedral angles</h3>'+tableHTML(report.structure.torsions,[{key:'Atom1',label:'Atom 1'},{key:'Atom2',label:'Atom 2'},{key:'Atom3',label:'Atom 3'},{key:'Atom4',label:'Atom 4'},{key:'Dihedral_deg',label:'Dihedral (°)'}]);
     $('excitedTable').innerHTML=tableHTML(report.excitedStates,[{key:'State',label:'State'},{key:'Symmetry',label:'Symmetry'},{key:'Energy_eV',label:'Energy (eV)'},{key:'Wavelength_nm',label:'Wavelength (nm)'},{key:'OscillatorStrength',label:'Oscillator strength'}]);
     const es=report.excitedStates.filter(x=>Number.isFinite(x.Wavelength_nm)&&x.Wavelength_nm>0);
     if(es.length){const max=Math.max(...es.map(x=>x.OscillatorStrength||1));$('spectrumChart').innerHTML='<svg viewBox="0 0 620 190" width="100%" role="img" aria-label="Stick absorption spectrum">'+es.map(x=>{const xx=30+(x.Wavelength_nm/Math.max(800,...es.map(q=>q.Wavelength_nm)))*560,hh=130*(x.OscillatorStrength||.1)/max;return '<line x1="'+xx+'" y1="150" x2="'+xx+'" y2="'+(150-hh)+'" stroke="#087f80" stroke-width="3"/><text x="'+xx+'" y="168" font-size="10" text-anchor="middle">'+Math.round(x.Wavelength_nm)+'</text>';}).join('')+'<line x1="20" y1="150" x2="600" y2="150" stroke="#65758b"/><text x="300" y="188" text-anchor="middle" font-size="11">Wavelength (nm)</text></svg>';}else $('spectrumChart').innerHTML='<p class="muted">No recognized excited-state transitions found. Run TD-DFT / TD-DFT output and upload the log.</p>';
-    const gap=report.electronic.find(p=>/HOMO-LUMO gap/i.test(p.Property));
-    $('orbitalDiagram').innerHTML=gap?'<div class="metric"><span>HOMO–LUMO gap</span><b>'+escHTML(gap.Value)+' '+escHTML(gap.Unit)+'</b></div>':'<p class="muted">HOMO/LUMO levels were not recognized in this output. Export orbital energies from ORCA/Gaussian or upload an orbital-energy report.</p>';
-    $('exportTable').innerHTML=tableHTML(report.electronic,[{key:'Property',label:'Property'},{key:'Value',label:'Value'},{key:'Unit',label:'Unit'}])+ '<p class="muted">Available report tables: bonds, angles, dihedrals, electronic properties and excited states.</p>';
+    const hom=report.reactivity?.find(p=>p.Property==='HOMO (eV)'),lum=report.reactivity?.find(p=>p.Property==='LUMO (eV)'),gap=report.electronic.find(p=>/HOMO-LUMO gap/i.test(p.Property));
+    $('orbitalDiagram').innerHTML=hom&&lum?'<svg viewBox="0 0 360 150" width="100%" role="img" aria-label="HOMO LUMO energy level diagram"><line x1="28" y1="124" x2="332" y2="124" stroke="#9aa8b9"/><line x1="70" y1="95" x2="155" y2="95" stroke="#087f80" stroke-width="5"/><line x1="205" y1="34" x2="290" y2="34" stroke="#245fe8" stroke-width="5"/><text x="112" y="84" text-anchor="middle" font-size="12">HOMO '+Number(hom.Value).toFixed(2)+' eV</text><text x="247" y="23" text-anchor="middle" font-size="12">LUMO '+Number(lum.Value).toFixed(2)+' eV</text><line x1="180" y1="38" x2="180" y2="91" stroke="#65758b" stroke-dasharray="3 3"/><text x="190" y="67" font-size="11">ΔE '+(Number(lum.Value)-Number(hom.Value)).toFixed(2)+' eV</text></svg><p class="hint">Energy-level diagram from orbital energies parsed from the output. This is not a 3D orbital isosurface.</p>':gap?'<div class="metric"><span>HOMO–LUMO gap</span><b>'+escHTML(gap.Value)+' '+escHTML(gap.Unit)+'</b></div>':'<p class="muted">HOMO/LUMO levels were not recognized. ORCA usually reports them in the ORBITAL ENERGIES table; Gaussian requires parsing its orbital eigenvalue sections.</p>';
+    $('exportTable').innerHTML=tableHTML(report.electronic,[{key:'Property',label:'Property'},{key:'Value',label:'Value'},{key:'Unit',label:'Unit'}])+ '<p class="muted">Report includes structural descriptors, electronic/Conceptual-DFT estimates, recognized thermochemistry, and excited states. Inspect units and calculation settings before publication.</p>';
     $('analysisStatus').className='status ok';$('analysisStatus').textContent='Analysis complete. '+s.atoms+' atoms, '+s.bonds+' inferred bonds, '+s.excitedStates+' parsed excited states.';
   }
   $('runAnalysis').addEventListener('click',async()=>{
