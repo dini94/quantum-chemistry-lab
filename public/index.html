@@ -394,12 +394,12 @@ S(=O)(=O)N</textarea>
     }
     // Gaussian frontier orbitals: collect continuation lines after the final occupied/virtual eigenvalue labels (Hartree).
     function gaussianEigenvalues(label){
-      const re=new RegExp(label+'\\\\s*--([\\\\s\\\\S]*?)(?=\\\\n\\\\s*(?:Alpha|Beta)\\\\s+(?:occ\\\\.|virt\\\\.)\\\\s+eigenvalues|\\\\n\\\\s*[A-Z][A-Za-z ]{2,}--|$)','gi');
+      const re=new RegExp(label+'\\s*--([\\s\\S]*?)(?=\\n\\s*(?:Alpha|Beta)\\s+(?:occ\\.|virt\\.)\\s+eigenvalues|\\n\\s*[A-Z][A-Za-z ]{2,}--|$)','gi');
       const ms=[...text.matchAll(re)];if(!ms.length)return [];
-      return (ms[ms.length-1][1].match(/[-+]?(?:\\\\d+\\\\.?\\\\d*|\\\\.\\\\d+)(?:[EeDd][-+]?\\\\d+)?/g)||[]).map(x=>parseFloat(x.replace(/[Dd]/g,'E')));
+      return (ms[ms.length-1][1].match(/[-+]?(?:\\d+\\.?\\d*|\\.\\d+)(?:[EeDd][-+]?\\d+)?/g)||[]).map(x=>parseFloat(x.replace(/[Dd]/g,'E')));
     }
     if(!orbStarts.length && /Gaussian/i.test(kind)){
-      const occ=gaussianEigenvalues('Alpha\\\\s+occ\\\\.\\\\s+eigenvalues'),virt=gaussianEigenvalues('Alpha\\\\s+virt\\\\.\\\\s+eigenvalues');
+      const occ=gaussianEigenvalues('Alpha\\s+occ\\.\\s+eigenvalues'),virt=gaussianEigenvalues('Alpha\\s+virt\\.\\s+eigenvalues');
       if(occ.length)props.push({Property:'HOMO energy',Value:occ[occ.length-1]*27.211386,Unit:'eV'});
       if(virt.length)props.push({Property:'LUMO energy',Value:virt[0]*27.211386,Unit:'eV'});
     }
