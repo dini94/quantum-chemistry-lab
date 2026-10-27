@@ -335,19 +335,19 @@ S(=O)(=O)N</textarea>
     // ORCA orbital table: use the last ORBITAL ENERGIES block and occupancy to identify frontier orbitals.
     const orbStarts=[...text.matchAll(/ORBITAL ENERGIES/gi)];
     if(orbStarts.length){
-      const chunk=text.slice(orbStarts[orbStarts.length-1].index).split(/\\n\\s*\\n\\s*[-]{3,}/)[0];
-      const orbitalRows=[];for(const line of chunk.split(/\\r?\\n/)){const m=line.match(/^\\s*(\\d+)\\s+([0-9.]+)\\s+(-?[0-9.]+)\\s+(-?[0-9.]+)/);if(m)orbitalRows.push({index:+m[1],occ:+m[2],eh:+m[3],ev:+m[4]});}
+      const chunk=text.slice(orbStarts[orbStarts.length-1].index).split(/\n\s*\n\s*[-]{3,}/)[0];
+      const orbitalRows=[];for(const line of chunk.split(/\r?\n/)){const m=line.match(/^\s*(\d+)\s+([0-9.]+)\s+(-?[0-9.]+)\s+(-?[0-9.]+)/);if(m)orbitalRows.push({index:+m[1],occ:+m[2],eh:+m[3],ev:+m[4]});}
       const occ=orbitalRows.filter(o=>o.occ>0.0001),virt=orbitalRows.filter(o=>o.occ<=0.0001);
       if(occ.length){const h=occ[occ.length-1];props.push({Property:'HOMO energy',Value:h.ev,Unit:'eV',Orbital:h.index});}
       if(virt.length){const l=virt[0];props.push({Property:'LUMO energy',Value:l.ev,Unit:'eV',Orbital:l.index});}
     }
     // Common ORCA thermochemistry labels and Gaussian frequency thermochemistry.
-    add('Enthalpy (electronic + thermal)',/Total Enthalpy\\s+[:=]?\\s*(-?[0-9]+\\.[0-9]+)/i,'Eh');
-    add('Gibbs free energy',/(?:Final Gibbs free energy|Final Gibbs free Energy|G-E\\(el\\))\\s*[:=]?\\s*(-?[0-9]+\\.[0-9]+)/i,'Eh');
-    add('Zero-point energy',/Zero point energy\\s*[:=]?\\s*(-?[0-9]+\\.[0-9]+)/i,'Eh');
-    add('Thermal correction to Enthalpy',/Thermal correction to Enthalpy=\\s*(-?[0-9.]+)/i,'Eh');
-    add('Thermal correction to Internal Energy',/Thermal correction to Energy=\\s*(-?[0-9.]+)/i,'Eh');
-    add('Thermal correction to Entropy',/Thermal correction to Gibbs Free Energy=\\s*(-?[0-9.]+)/i,'Eh');
+    add('Enthalpy (electronic + thermal)',/Total Enthalpy\s+[:=]?\s*(-?[0-9]+\.[0-9]+)/i,'Eh');
+    add('Gibbs free energy',/(?:Final Gibbs free energy|Final Gibbs free Energy|G-E\(el\))\s*[:=]?\s*(-?[0-9]+\.[0-9]+)/i,'Eh');
+    add('Zero-point energy',/Zero point energy\s*[:=]?\s*(-?[0-9]+\.[0-9]+)/i,'Eh');
+    add('Thermal correction to Enthalpy',/Thermal correction to Enthalpy=\s*(-?[0-9.]+)/i,'Eh');
+    add('Thermal correction to Internal Energy',/Thermal correction to Energy=\s*(-?[0-9.]+)/i,'Eh');
+    add('Thermal correction to Entropy',/Thermal correction to Gibbs Free Energy=\s*(-?[0-9.]+)/i,'Eh');
     const excited=[];
     let m;
     const re1=/Excited State\s+(\d+):\s*([A-Za-z-]+)\s+([\d.]+)\s+eV\s+([\d.]+)\s+nm\s+f=([\d.]+)/g;
