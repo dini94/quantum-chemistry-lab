@@ -363,7 +363,7 @@ S(=O)(=O)N</textarea>
     const reactivity=[];
     if(Number.isFinite(hom)&&Number.isFinite(lum)){
       const hEv=Math.abs(hom)<1.5?hom*27.211386:hom, lEv=Math.abs(lum)<1.5?lum*27.211386:lum;
-      const IP=-hEv,EA=-lEv,hard=(IP-EA)/2,soft=hard!==0?1/(2*hard):null,chi=(IP+EA)/2,mu=-chi,omega=hard!==0?mu*mu/(2*hard):null;
+      const IP=-hEv,EA=-lEv,hard=(IP-EA)/2,soft=hard!==0?1/hard:null,chi=(IP+EA)/2,mu=-chi,omega=hard!==0?mu*mu/(2*hard):null;
       [['HOMO (eV)',hEv],['LUMO (eV)',lEv],['Gap ΔE (eV)',lEv-hEv],['Estimated IP (eV)',IP],['Estimated EA (eV)',EA],['Electronegativity χ (eV)',chi],['Chemical potential μ (eV)',mu],['Global hardness η (eV)',hard],['Softness S (1/eV)',soft],['Electrophilicity ω (eV)',omega],['Electrodonating power ω− (eV)',null],['Electroaccepting power ω+ (eV)',null]].forEach(([Property,Value])=>reactivity.push({Property,Value:Value===null?'Requires additional quantities':Value===null?null:(Number.isFinite(Value)?Value.toFixed(4):'N/A'),Unit:''}));
     }
     const td=props.filter(p=>/Gibbs|Enthalpy|Zero.point|Thermal correction|energy/i.test(p.Property)&&/Eh/.test(p.Unit));
